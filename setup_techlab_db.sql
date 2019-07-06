@@ -39,12 +39,11 @@ CREATE TABLE "inventoryMutation"
 DROP TABLE IF EXISTS "user" CASCADE;
 CREATE TABLE "user"
 (
-    "id"           varchar(36) NOT NULL UNIQUE,
-    "code"         varchar(36) NOT NULL,
-    "codeHash"     text        NOT NULL,
-    "mail"         text        NOT NULL,
-    "mobileNumber" text        NOT NULL,
-    "name"         text        NOT NULL
+    "id"            varchar(36) NOT NULL UNIQUE,
+    "code"          varchar(36) NOT NULL,
+    "mail"          text        NOT NULL,
+    "mobile_number" text        NOT NULL,
+    "name"          text        NOT NULL
 );
 
 -- --------------------------------------------------------
@@ -106,11 +105,12 @@ CREATE TABLE "account"
 DROP TABLE IF EXISTS "reservation" CASCADE;
 CREATE TABLE "reservation"
 (
-    "id"          varchar(36) NOT NULL UNIQUE,
-    "user_id"     varchar(36) NOT NULL,
-    "contract_id" varchar(36) NOT NULL,
-    "from_date"   date        NOT NULL,
-    "to_date"     date        NOT NULL
+    "id"           varchar(36) NOT NULL UNIQUE,
+    "user_id"      varchar(36) NOT NULL,
+    "contract_id"  varchar(36) NOT NULL,
+    "from_date"    date        NOT NULL,
+    "to_date"      date        NOT NULL,
+    "activated_on" timestamp DEFAULT NULL
 );
 
 -- --------------------------------------------------------

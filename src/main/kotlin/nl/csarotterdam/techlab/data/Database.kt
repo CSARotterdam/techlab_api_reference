@@ -57,7 +57,7 @@ class Database(
 
     fun execute(
             query: String,
-            initPreparedStatement: (PreparedStatement) -> Unit
+            init: (PreparedStatement) -> Unit
     ): Boolean {
         // Initialize connections
         val conn = getConnection()
@@ -70,7 +70,7 @@ class Database(
 
         try {
             // Set query
-            initPreparedStatement(ps)
+            init(ps)
             res = ps.execute()
         } catch (e: Exception) {
             close(ps)
@@ -81,10 +81,10 @@ class Database(
         return res
     }
 
-    private fun <T> executeQuery(
+    fun <T> executeQuery(
             query: String,
-            initPreparedStatement: (PreparedStatement, Connection) -> Unit,
-            convertEntry: (ResultSet, Connection) -> T
+            init: ((PreparedStatement) -> Unit)? = null,
+            map: (ResultSet) -> T
     ): List<T> {
         // Initialize connections
         val conn = getConnection()
@@ -98,13 +98,13 @@ class Database(
 
         try {
             // Set query
-            initPreparedStatement(ps, conn)
+            init?.invoke(ps)
             rs = ps.executeQuery()
 
             try {
                 // Convert result
                 while (rs.next()) {
-                    list.add(convertEntry(rs, conn))
+                    list.add(map(rs))
                 }
                 rs.close()
             } catch (e: Exception) {
@@ -119,31 +119,6 @@ class Database(
         }
         return list
     }
-
-    fun <T> executeQuery(
-            conn: Connection?,
-            query: String,
-            initPreparedStatement: (PreparedStatement, Connection) -> Unit,
-            convertEntry: (ResultSet, Connection) -> T
-    ): List<T> = conn?.run {
-        // Initialize connections
-        val ps = this.prepareStatement(query)
-
-        // Set query
-        initPreparedStatement(ps, this)
-        val rs = ps.executeQuery()
-
-        // Convert result
-        val list: MutableList<T> = mutableListOf()
-        while (rs.next()) {
-            list.add(convertEntry(rs, this))
-        }
-
-        // Close connections
-        rs.close()
-
-        list
-    } ?: executeQuery(query, initPreparedStatement, convertEntry)
 
     fun <T> assertOneResult(
             list: List<T>

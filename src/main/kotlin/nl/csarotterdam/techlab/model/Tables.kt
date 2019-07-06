@@ -10,7 +10,7 @@ data class Inventory(
         val category: InventoryCategory,
         val loan_time_in_days: Int
         // TODO: add extra information for books, etc.? => extra_info_id
-) : Table("inventory")
+)
 
 data class InventoryMutation(
         val mutation_id: String,
@@ -20,16 +20,15 @@ data class InventoryMutation(
         val loan_id: String?,
         val amount: Int,
         val time: Timestamp
-) : Table("inventoryMutation")
+)
 
 data class User(
         val id: String,
         val code: String,
-        val codeHash: String,
         val mail: String,
-        val mobileNumber: String,
+        val mobile_number: String,
         val name: String
-) : Table("user")
+)
 
 data class Contract(
         val id: String,
@@ -47,7 +46,7 @@ data class Loan(
         val contract_id: String,
         val return_date: Date,
         val returned_on: Date?
-) : Table("loan")
+)
 
 data class Account(
         val id: String,
@@ -57,7 +56,7 @@ data class Account(
         val salt: String,
         val role: AccountRole,
         val active: Boolean
-) : Table("account")
+)
 
 data class Reservation(
         val id: String,
@@ -65,12 +64,12 @@ data class Reservation(
         val contract_id: String,
         val from_date: Date,
         val to_date: Date,
-        val activated_on: Date?
-) : Table("reservation")
+        val activated_on: Timestamp?
+)
 
 data class ReservationItem(
         val item_id: String,
         val reservation_id: String,
         val inventory_id: String,
         val amount: Int
-) : Table("reservationItem")
+)

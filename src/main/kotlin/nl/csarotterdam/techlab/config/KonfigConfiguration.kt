@@ -34,3 +34,81 @@ object server : PropertyGroup() {
         val ssl by booleanType
     }
 }
+
+object inventory : PropertyGroup() {
+    val readAll by stringType
+    val readById by stringType
+    val searchByName by stringType
+    val searchByCategory by stringType
+
+    val create by stringType
+    val update by stringType
+}
+
+object inventoryMutation : PropertyGroup() {
+    val readAll by stringType
+    val readById by stringType
+    val readAllByInventoryId by stringType
+    val readAllByLoanId by stringType
+
+    val create by stringType
+}
+
+object user : PropertyGroup() {
+    val readById by stringType
+    val readByCode by stringType
+
+    val create by stringType
+    val update by stringType
+}
+
+object contract : PropertyGroup() {
+    val readById by stringType
+    val readByAccountId by stringType
+    val readByUserId by stringType
+
+    val create by stringType
+    val signByAccount by stringType
+    val signByUser by stringType
+}
+
+object loan : PropertyGroup() {
+    val readAllActiveLoans by stringType
+    val readById by stringType
+    val readByContractId by stringType
+    val readActiveLoansByUserId by stringType
+    val readByUserId by stringType
+
+    val create by stringType
+    val setReturned by stringType
+}
+
+object account : PropertyGroup() {
+    val readAllActive by stringType
+    val readAll by stringType
+    val readById by stringType
+
+    val create by stringType
+    val setUsername by stringType
+    val setPassword by stringType
+    val setRole by stringType
+    val setActive by stringType
+}
+
+object reservation : PropertyGroup() {
+    val readAllCurrent by stringType
+    val readAll by stringType
+    val readById by stringType
+    val readByUserId by stringType
+
+    val create by stringType
+    val setActivated by stringType
+    val delete by stringType
+}
+
+object reservationItem : PropertyGroup() {
+    val readById by stringType
+    val readByReservationId by stringType
+
+    val create by stringType
+}
