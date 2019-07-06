@@ -25,6 +25,7 @@ data class InventoryMutation(
 data class User(
         val id: String,
         val code: String,
+        val codeHash: String,
         val mail: String,
         val mobileNumber: String,
         val name: String
@@ -32,9 +33,9 @@ data class User(
 
 data class Contract(
         val id: String,
-        val created_time: Timestamp,
         val account_id: String,
         val user_id: String,
+        val created_time: Timestamp,
         val signed_by_account_on: Timestamp?,
         val signed_by_user_on: Timestamp?
         // extra info for account and user??
@@ -44,19 +45,13 @@ data class Loan(
         val id: String,
         val user_id: String,
         val contract_id: String,
-        val return_date: Date
-) : Table("loan")
-
-data class LoanArchive(
-        val id: String,
-        val user_id: String,
-        val contract_id: String,
         val return_date: Date,
-        val returned_on: Date
-) : Table("loanArchive")
+        val returned_on: Date?
+) : Table("loan")
 
 data class Account(
         val id: String,
+        val user_id: String,
         val username: String,
         val passwordHash: String,
         val salt: String,
@@ -69,17 +64,9 @@ data class Reservation(
         val user_id: String,
         val contract_id: String,
         val from_date: Date,
-        val to_date: Date
-) : Table("reservation")
-
-data class ReservationArchive(
-        val id: String,
-        val user_id: String,
-        val contract_id: String,
-        val from_date: Date,
         val to_date: Date,
-        val activated_on: Date
-) : Table("reservationArchive")
+        val activated_on: Date?
+) : Table("reservation")
 
 data class ReservationItem(
         val item_id: String,
