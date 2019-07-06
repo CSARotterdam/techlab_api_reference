@@ -73,7 +73,6 @@ DROP TABLE IF EXISTS "loan" CASCADE;
 CREATE TABLE "loan"
 (
     "id"          varchar(36) NOT NULL UNIQUE,
-    "user_id"     varchar(36) NOT NULL,
     "contract_id" varchar(36) NOT NULL,
     "return_date" date        NOT NULL
 );
@@ -106,7 +105,6 @@ DROP TABLE IF EXISTS "reservation" CASCADE;
 CREATE TABLE "reservation"
 (
     "id"           varchar(36) NOT NULL UNIQUE,
-    "user_id"      varchar(36) NOT NULL,
     "contract_id"  varchar(36) NOT NULL,
     "from_date"    date        NOT NULL,
     "to_date"      date        NOT NULL,
@@ -163,7 +161,6 @@ ALTER TABLE "contract"
 --
 ALTER TABLE "loan"
     ADD PRIMARY KEY ("id"),
-    ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE RESTRICT,
     ADD FOREIGN KEY ("contract_id") REFERENCES "contract" ("id") ON DELETE RESTRICT;
 
 --
@@ -178,7 +175,6 @@ ALTER TABLE "account"
 --
 ALTER TABLE "reservation"
     ADD PRIMARY KEY ("id"),
-    ADD FOREIGN KEY ("user_id") REFERENCES "user" ("id") ON DELETE RESTRICT ,
     ADD FOREIGN KEY ("contract_id") REFERENCES "contract" ("id") ON DELETE RESTRICT;
 
 --

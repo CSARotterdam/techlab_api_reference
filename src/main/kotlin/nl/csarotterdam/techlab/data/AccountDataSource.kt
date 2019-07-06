@@ -29,8 +29,15 @@ class AccountDataSource : DataSource<Account>() {
             map = this::read
     )
 
-    fun readById() = database.assertOneResult(database.executeQuery(
+    fun readById(id: String) = database.assertOneResult(database.executeQuery(
             query = config[account.readById],
+            init = { it.setString(1, id) },
+            map = this::read
+    ))
+
+    fun readByUsername(username: String) = database.assertOneResult(database.executeQuery(
+            query = config[account.readByUsername],
+            init = { it.setString(1, username) },
             map = this::read
     ))
 

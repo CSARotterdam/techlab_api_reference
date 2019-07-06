@@ -42,7 +42,6 @@ data class Contract(
 
 data class Loan(
         val id: String,
-        val user_id: String,
         val contract_id: String,
         val return_date: Date,
         val returned_on: Date?
@@ -60,7 +59,6 @@ data class Account(
 
 data class Reservation(
         val id: String,
-        val user_id: String,
         val contract_id: String,
         val from_date: Date,
         val to_date: Date,

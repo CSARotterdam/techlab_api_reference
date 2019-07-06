@@ -16,9 +16,9 @@ class UserDataSource : DataSource<User>() {
             name = rs.getString(5)
     )
 
-    fun readById(userId: String) = database.assertOneResult(database.executeQuery(
+    fun readById(id: String) = database.assertOneResult(database.executeQuery(
             query = config[user.readById],
-            init = { it.setString(1, userId) },
+            init = { it.setString(1, id) },
             map = this::read
     ))
 
@@ -28,10 +28,10 @@ class UserDataSource : DataSource<User>() {
             map = this::read
     )
 
-    fun create(usr: User) = database.execute(
+    fun create(u: User) = database.execute(
             query = config[user.create],
             init = {
-                usr.run {
+                u.run {
                     it.setString(1, id)
                     it.setString(2, code)
                     it.setString(3, mail)
@@ -41,10 +41,10 @@ class UserDataSource : DataSource<User>() {
             }
     )
 
-    fun update(usr: User) = database.execute(
+    fun update(u: User) = database.execute(
             query = config[user.update],
             init = {
-                usr.run {
+                u.run {
                     it.setString(1, code)
                     it.setString(2, mail)
                     it.setString(3, mobile_number)

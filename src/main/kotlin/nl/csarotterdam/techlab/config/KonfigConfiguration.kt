@@ -87,6 +87,7 @@ object account : PropertyGroup() {
     val readAllActive by stringType
     val readAll by stringType
     val readById by stringType
+    val readByUsername by stringType
 
     val create by stringType
     val setUsername by stringType

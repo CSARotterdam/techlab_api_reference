@@ -2,6 +2,7 @@ package nl.csarotterdam.techlab.data
 
 import nl.csarotterdam.techlab.config.contract
 import nl.csarotterdam.techlab.model.Contract
+import nl.csarotterdam.techlab.model.ContractInputWithId
 import nl.csarotterdam.techlab.util.toResultOrNull
 import org.springframework.stereotype.Component
 import java.sql.ResultSet
@@ -36,7 +37,7 @@ class ContractDataSource : DataSource<Contract>() {
             map = this::read
     )
 
-    fun create(c: Contract) = database.execute(
+    fun create(c: ContractInputWithId) = database.execute(
             query = config[contract.create],
             init = {
                 c.run {
@@ -47,13 +48,13 @@ class ContractDataSource : DataSource<Contract>() {
             }
     )
 
-    fun signByAccount(id: String) = database.execute(
+    fun signByAccount(accountId: String) = database.execute(
             query = config[contract.signByAccount],
-            init = { it.setString(1, id) }
+            init = { it.setString(1, accountId) }
     )
 
-    fun signByUser(id: String) = database.execute(
+    fun signByUser(userId: String) = database.execute(
             query = config[contract.signByUser],
-            init = { it.setString(1, id) }
+            init = { it.setString(1, userId) }
     )
 }

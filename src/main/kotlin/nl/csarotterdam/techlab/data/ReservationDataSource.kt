@@ -13,11 +13,10 @@ class ReservationDataSource : DataSource<Reservation>() {
 
     override fun read(rs: ResultSet) = Reservation(
             id = rs.getString(1),
-            user_id = rs.getString(2),
-            contract_id = rs.getString(3),
-            from_date = rs.getDate(4),
-            to_date = rs.getDate(5),
-            activated_on = rs.getTimestamp(6).toResultOrNull(rs)
+            contract_id = rs.getString(2),
+            from_date = rs.getDate(3),
+            to_date = rs.getDate(4),
+            activated_on = rs.getTimestamp(5).toResultOrNull(rs)
     )
 
     fun listCurrent() = database.executeQuery(
@@ -47,11 +46,10 @@ class ReservationDataSource : DataSource<Reservation>() {
             init = {
                 r.run {
                     it.setString(1, id)
-                    it.setString(2, user_id)
-                    it.setString(3, contract_id)
-                    it.setDate(4, from_date)
-                    it.setDate(5, to_date)
-                    it.setValueCanBeNull(6, Types.TIMESTAMP, activated_on) { n, v -> it.setTimestamp(n, v) }
+                    it.setString(2, contract_id)
+                    it.setDate(3, from_date)
+                    it.setDate(4, to_date)
+                    it.setValueCanBeNull(5, Types.TIMESTAMP, activated_on) { n, v -> it.setTimestamp(n, v) }
                 }
             }
     )

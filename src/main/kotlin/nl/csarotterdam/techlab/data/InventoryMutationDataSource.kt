@@ -2,6 +2,7 @@ package nl.csarotterdam.techlab.data
 
 import nl.csarotterdam.techlab.config.inventoryMutation
 import nl.csarotterdam.techlab.model.InventoryMutation
+import nl.csarotterdam.techlab.model.InventoryMutationInput
 import nl.csarotterdam.techlab.model.InventoryMutationSubtype
 import nl.csarotterdam.techlab.model.InventoryMutationType
 import nl.csarotterdam.techlab.util.setValueCanBeNull
@@ -9,6 +10,7 @@ import nl.csarotterdam.techlab.util.toResultOrNull
 import org.springframework.stereotype.Component
 import java.sql.ResultSet
 import java.sql.Types
+import java.util.*
 
 @Component
 class InventoryMutationDataSource : DataSource<InventoryMutation>() {
@@ -46,17 +48,16 @@ class InventoryMutationDataSource : DataSource<InventoryMutation>() {
             map = this::read
     )
 
-    fun create(im: InventoryMutation) = database.execute(
+    fun create(im: InventoryMutationInput) = database.execute(
             query = config[inventoryMutation.create],
             init = {
                 im.run {
-                    it.setString(1, mutation_id)
+                    it.setString(1, UUID.randomUUID().toString())
                     it.setString(2, inventory_id)
                     it.setString(3, type.toString())
                     it.setString(4, subtype.toString())
                     it.setValueCanBeNull(5, Types.VARCHAR, loan_id) { n, v -> it.setString(n, v) }
                     it.setInt(6, amount)
-                    it.setTimestamp(7, time)
                 }
             }
     )
