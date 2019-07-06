@@ -17,7 +17,7 @@ class SwaggerConfig : WebMvcConfigurationSupport() {
     @Bean
     fun api(): Docket = Docket(DocumentationType.SWAGGER_2)
             .select()
-            .apis(RequestHandlerSelectors.basePackage("nl.csarotterdam.techlab.controllers"))
+            .apis(RequestHandlerSelectors.basePackage("nl.csarotterdam.techlab.controller"))
             .paths(PathSelectors.any())
             .build()
 
