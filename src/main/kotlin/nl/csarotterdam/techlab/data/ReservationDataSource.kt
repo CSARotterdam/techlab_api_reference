@@ -16,7 +16,8 @@ class ReservationDataSource : DataSource<Reservation>() {
             contract_id = rs.getString(2),
             from_date = rs.getDate(3),
             to_date = rs.getDate(4),
-            activated_on = rs.getTimestamp(5).toResultOrNull(rs)
+            activated_on = rs.getTimestamp(5).toResultOrNull(rs),
+            deleted_on = rs.getTimestamp(6).toResultOrNull(rs)
     )
 
     fun listCurrent() = database.executeQuery(
@@ -59,8 +60,8 @@ class ReservationDataSource : DataSource<Reservation>() {
             init = { it.setString(1, id) }
     )
 
-    fun delete(id: String) = database.execute(
-            query = config[reservation.delete],
+    fun setDeleted(id: String) = database.execute(
+            query = config[reservation.setDeleted],
             init = { it.setString(1, id) }
     )
 }

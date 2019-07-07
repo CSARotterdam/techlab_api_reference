@@ -106,7 +106,7 @@ object reservation : PropertyGroup() {
 
     val create by stringType
     val setActivated by stringType
-    val delete by stringType
+    val setDeleted by stringType
 }
 
 object reservationItem : PropertyGroup() {

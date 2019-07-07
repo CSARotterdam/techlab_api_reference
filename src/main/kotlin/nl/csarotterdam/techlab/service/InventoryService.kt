@@ -66,8 +66,9 @@ class InventoryService(
     fun listInventory() = inventoryDataSource.list()
             .map { it.convert() }
 
-    fun listMutations() = inventoryMutationDataSource.list()
-            .map { it.convert() }
+    fun listMutations(token: String) = authService.authenticate(token, AccountPrivilege.READ) {
+        inventoryMutationDataSource.list().map { it.convert() }
+    }
 
     fun readInventoryById(id: String) = inventoryDataSource.readById(id)
             ?.convert() ?: throw NotFoundException("inventory with id '$id' not found")

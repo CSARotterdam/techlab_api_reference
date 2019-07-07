@@ -96,7 +96,7 @@ class AuthService(
         accountDataSource.setActive(id, active)
     }
 
-    private fun nl.csarotterdam.techlab.model.User.convert(): UserOutput = this.decrypt().run {
+    private fun User.convert(): UserOutput = this.decrypt().run {
         UserOutput(
                 id = id,
                 code = code,
@@ -106,7 +106,7 @@ class AuthService(
         )
     }
 
-    private fun UserInput.convert(): nl.csarotterdam.techlab.model.User = User(
+    private fun UserInput.convert(): User = User(
             id = UUID.randomUUID().toString(),
             code = code,
             mail = mail,
@@ -115,7 +115,7 @@ class AuthService(
     ).encrypt()
 
     // TODO: encryption
-    private fun nl.csarotterdam.techlab.model.User.encrypt(): nl.csarotterdam.techlab.model.User = User(
+    private fun User.encrypt(): User = User(
             id = id,
             code = code,
             mail = mail,
@@ -124,7 +124,7 @@ class AuthService(
     )
 
     // TODO: decryption
-    private fun nl.csarotterdam.techlab.model.User.decrypt(): nl.csarotterdam.techlab.model.User = User(
+    private fun User.decrypt(): User = User(
             id = id,
             code = code,
             mail = mail,
@@ -145,7 +145,7 @@ class AuthService(
         userDataSource.create(u.convert())
     }
 
-    fun updateUser(token: String, u: nl.csarotterdam.techlab.model.User) = authenticate(token, AccountPrivilege.WRITE) {
+    fun updateUser(token: String, u: User) = authenticate(token, AccountPrivilege.WRITE) {
         userDataSource.update(u.encrypt())
     }
 
@@ -196,11 +196,11 @@ class AuthService(
         throw UnauthorizedException("not authorized")
     }
 
-    private fun parseClaims(claims: Claims): User {
+    private fun parseClaims(claims: Claims): AuthorizedUser {
         val username = claims.subject
         val accountId = requireNotNull(claims["account_id"]).toString()
         val role = AccountRole.valueOf(requireNotNull(claims["role"]).toString())
-        return User(
+        return AuthorizedUser(
                 username = username,
                 accountId = accountId,
                 role = role
@@ -237,7 +237,7 @@ class AuthService(
                 .compact()
     }
 
-    private data class User(
+    private data class AuthorizedUser(
             val username: String,
             val accountId: String,
             val role: AccountRole

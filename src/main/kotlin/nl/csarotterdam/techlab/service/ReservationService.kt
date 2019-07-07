@@ -22,7 +22,8 @@ class ReservationService(
             items = readReservationItemsById(token, id),
             from_date = from_date,
             to_date = to_date,
-            activated_on = activated_on
+            activated_on = activated_on,
+            deleted_on = deleted_on
     )
 
     private fun ReservationItem.convert(): ReservationItemOutput = ReservationItemOutput(
@@ -60,8 +61,8 @@ class ReservationService(
         reservationDataSource.setActivated(id)
     }
 
-    fun delete(token: String, id: String) = authService.authenticate(token, AccountPrivilege.WRITE) {
-        reservationDataSource.delete(id)
+    fun setDeleted(token: String, id: String) = authService.authenticate(token, AccountPrivilege.WRITE) {
+        reservationDataSource.setDeleted(id)
     }
 
     private fun readReservationItemsById(token: String, id: String) = authService.authenticate(token, AccountPrivilege.READ) {

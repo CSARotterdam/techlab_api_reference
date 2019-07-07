@@ -63,7 +63,8 @@ data class Reservation(
         val contract_id: String,
         val from_date: Date,
         val to_date: Date,
-        val activated_on: Timestamp?
+        val activated_on: Timestamp?,
+        val deleted_on: Timestamp?
 )
 
 data class ReservationItem(

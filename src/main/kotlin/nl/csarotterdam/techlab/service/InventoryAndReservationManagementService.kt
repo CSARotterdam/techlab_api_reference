@@ -29,7 +29,8 @@ class InventoryAndReservationManagementService(
             contract_id = contract.id,
             from_date = from_date,
             to_date = to_date,
-            activated_on = null
+            activated_on = null,
+            deleted_on = null
     )
 
     fun createLoan(token: String, l: LoanCreateInput): LoanOutput = authService.authenticate(token, AccountPrivilege.WRITE) {
