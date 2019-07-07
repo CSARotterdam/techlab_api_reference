@@ -58,7 +58,7 @@ class ReservationService(
         reservationDataSource.create(reservation)
     }
 
-    fun setActivated(token: String, id: String): Boolean = authService.authenticate(token, AccountPrivilege.WRITE) {
+    fun setActivated(token: String, id: String) = authService.authenticate(token, AccountPrivilege.WRITE) {
         val reservation = readById(token, id)
         if (reservation.activated_on != null) {
             throw BadRequestException("this reservation is already used")

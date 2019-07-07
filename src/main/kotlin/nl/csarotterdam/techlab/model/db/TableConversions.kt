@@ -1,9 +1,10 @@
 package nl.csarotterdam.techlab.model.db
 
+import nl.csarotterdam.techlab.model.auth.AccountRole
 import nl.csarotterdam.techlab.model.inventory.InventoryCategory
+import nl.csarotterdam.techlab.model.inventory.InventoryCategoryOutput
 import nl.csarotterdam.techlab.model.inventory.InventoryMutationSubtype
 import nl.csarotterdam.techlab.model.inventory.InventoryMutationType
-import nl.csarotterdam.techlab.model.auth.AccountRole
 import java.sql.Date
 import java.sql.Timestamp
 
@@ -24,7 +25,7 @@ data class InventoryOutput(
         val id: String,
         val name: String,
         val manufacturer: String,
-        val category: InventoryCategory,
+        val category: InventoryCategoryOutput,
         val loan_time_in_days: Int
 )
 
@@ -98,7 +99,7 @@ data class LoanOutput(
         val contract: ContractOutput,
         val items: List<LoanInventoryItem>,
         val return_date: Date,
-        val returned_on: Date?
+        val returned_on: Timestamp?
 )
 
 data class AccountInput(

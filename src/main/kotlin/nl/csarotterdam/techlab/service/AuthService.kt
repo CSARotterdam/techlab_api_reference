@@ -80,7 +80,7 @@ class AuthService(
         accountDataSource.setUsername(id, username)
     }
 
-    fun setPassword(token: String, id: String, password: String): Boolean = authenticate(token, AccountPrivilege.WRITE, id) {
+    fun setPassword(token: String, id: String, password: String) = authenticate(token, AccountPrivilege.WRITE, id) {
         val account = accountDataSource.readById(id)
                 ?: throw NotFoundException("account with '$id' not found")
 

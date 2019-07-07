@@ -5,9 +5,11 @@ import nl.csarotterdam.techlab.data.InventoryMutationDataSource
 import nl.csarotterdam.techlab.model.auth.AccountPrivilege
 import nl.csarotterdam.techlab.model.db.*
 import nl.csarotterdam.techlab.model.inventory.InventoryCategory
+import nl.csarotterdam.techlab.model.inventory.InventoryCategoryOutput
 import nl.csarotterdam.techlab.model.inventory.InventoryInfo
 import nl.csarotterdam.techlab.model.inventory.InventoryMutationSubtype.*
 import nl.csarotterdam.techlab.model.inventory.InventoryMutationType.ADD
+import nl.csarotterdam.techlab.model.inventory.InventoryMutationType.REMOVE
 import nl.csarotterdam.techlab.model.misc.BadRequestException
 import nl.csarotterdam.techlab.model.misc.NotFoundException
 import org.springframework.stereotype.Component
@@ -23,21 +25,30 @@ class InventoryService(
 
     object Mutation {
         fun getLoanMutations(loan: LoanCreateInput, loanId: String): List<InventoryMutationInput> = loan.items.map {
-            InventoryMutationInput(
-                    inventory_id = it.inventory_id,
-                    type = ADD,
-                    subtype = LOAN,
-                    loan_id = loanId,
-                    amount = it.amount
+            listOf(
+                    InventoryMutationInput(
+                            inventory_id = it.inventory_id,
+                            type = REMOVE,
+                            subtype = STOCK,
+                            loan_id = loanId,
+                            amount = it.amount
+                    ),
+                    InventoryMutationInput(
+                            inventory_id = it.inventory_id,
+                            type = ADD,
+                            subtype = LOAN,
+                            loan_id = loanId,
+                            amount = it.amount
+                    )
             )
-        }
+        }.flatten()
     }
 
     private fun Inventory.convert(): InventoryOutput = InventoryOutput(
             id = id,
             name = name,
             manufacturer = manufacturer,
-            category = category,
+            category = InventoryCategoryOutput(category),
             loan_time_in_days = loan_time_in_days
     )
 
@@ -86,6 +97,7 @@ class InventoryService(
             .map { it.convert() }
 
     fun getInventoryCategories() = InventoryCategory.values()
+            .map { InventoryCategoryOutput(it) }
 
     fun readMutationById(token: String, mutationId: String) = authService.authenticate(token, AccountPrivilege.READ) {
         inventoryMutationDataSource.readById(mutationId)?.convert()
@@ -126,25 +138,24 @@ class InventoryService(
                 .map { it.convert() }
     }
 
-    fun createInventory(token: String, i: InventoryInput): Boolean = authService.authenticate(token, AccountPrivilege.ADMIN) {
+    fun createInventory(token: String, i: InventoryInput) = authService.authenticate(token, AccountPrivilege.ADMIN) {
         if (i.initial_stock_size < 0) {
             throw BadRequestException("initial stock size must be 0 or higher")
         }
         val (inventory, mutation) = i.convert()
-        inventoryDataSource.create(inventory) && createMutation(token, mutation)
+        inventoryDataSource.create(inventory)
+        createMutation(token, mutation)
     }
 
     private fun createMutation(token: String, im: InventoryMutationInput) = authService.authenticate(token, AccountPrivilege.WRITE) {
         inventoryMutationDataSource.create(im)
     }
 
-    fun createMutationsForLoan(token: String, l: LoanCreateInput, id: String): Boolean = authService.authenticate(token, AccountPrivilege.WRITE) {
-        var successful = true
+    fun createMutationsForLoan(token: String, l: LoanCreateInput, id: String) = authService.authenticate(token, AccountPrivilege.WRITE) {
         val inventoryMutations = Mutation.getLoanMutations(l, id)
         inventoryMutations.forEach { mutation ->
-            successful = successful && createMutation(token, mutation)
+            createMutation(token, mutation)
         }
-        successful
     }
 
     fun updateInventory(token: String, i: Inventory) = authService.authenticate(token, AccountPrivilege.ADMIN) {

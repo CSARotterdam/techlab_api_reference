@@ -15,7 +15,7 @@ class LoanDataSource : DataSource<Loan>() {
             id = rs.getString(1),
             contract_id = rs.getString(2),
             return_date = rs.getDate(3),
-            returned_on = rs.getDate(4).toResultOrNull(rs)
+            returned_on = rs.getTimestamp(4).toResultOrNull(rs)
     )
 
     fun readAllActiveLoans() = database.executeQuery(
@@ -54,7 +54,7 @@ class LoanDataSource : DataSource<Loan>() {
                     it.setString(1, id)
                     it.setString(2, contract_id)
                     it.setDate(3, return_date)
-                    it.setValueCanBeNull(4, Types.DATE, returned_on) { n, v -> it.setDate(n, v) }
+                    it.setValueCanBeNull(4, Types.TIMESTAMP, returned_on) { n, v -> it.setTimestamp(n, v) }
                 }
             }
     )

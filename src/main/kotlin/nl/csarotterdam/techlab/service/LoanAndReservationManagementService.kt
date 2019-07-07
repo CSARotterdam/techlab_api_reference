@@ -211,6 +211,21 @@ class LoanAndReservationManagementService(
             toDate: Instant,
             items: List<InventoryItemInput>
     ): List<ManagementItem> {
+        // check for default errors, empty items list or items with invalid amount
+        val defaultChecks = mutableListOf<ManagementItem>()
+        if (items.isEmpty()) {
+            defaultChecks.add(ManagementItem(
+                    info = InfoDefaultItemsEmpty(),
+                    inventory_id = null
+            ))
+        }
+        items.filter { it.amount <= 0 }.forEach { item ->
+            defaultChecks.add(ManagementItem(
+                    info = InfoDefaultItemNoAmount(),
+                    inventory_id = item.inventory_id
+            ))
+        }
+
         val loanTimeInDays = TimeUtils.betweenNowInDays(toDate).toInt()
         val inventoryIds = items.map { it.inventory_id }
         val inventories = inventoryIds.map { inventoryService.readInventoryById(it) }
@@ -238,6 +253,7 @@ class LoanAndReservationManagementService(
         )
 
         return listOf(
+                defaultChecks,
                 loanTime,
                 inventoryAvailability,
                 reservationCollisions
@@ -298,14 +314,11 @@ class LoanAndReservationManagementService(
 
         // setup the loan and create inventory mutations
         val loan = loanService.create(token, loanInput, contract.id)
-        val successfullyCreatedMutations = inventoryService.createMutationsForLoan(token, loanInput, loan.id)
-        if (!successfullyCreatedMutations) {
-            throw BadRequestException("something went wrong while creating the mutations for the loan")
-        }
+        inventoryService.createMutationsForLoan(token, loanInput, loan.id)
         loanService.readById(token, loan.id)
     }
 
-    fun createReservation(token: String, r: ReservationInput): Boolean = authService.authenticate(token, AccountPrivilege.WRITE) {
+    fun createReservation(token: String, r: ReservationInput) = authService.authenticate(token, AccountPrivilege.WRITE) {
         val reservationInput = improveReservation(r)
         if (verifyReservation(token, reservationInput).any { it.info.type == ManagementType.ERROR }) {
             throw BadRequestException("loan can't be created")

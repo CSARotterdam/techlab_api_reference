@@ -5,7 +5,6 @@ import nl.csarotterdam.techlab.model.auth.AccountPrivilege
 import nl.csarotterdam.techlab.model.db.*
 import nl.csarotterdam.techlab.model.inventory.InventoryMutationSubtype
 import nl.csarotterdam.techlab.model.inventory.InventoryMutationType
-import nl.csarotterdam.techlab.model.misc.BadRequestException
 import nl.csarotterdam.techlab.model.misc.NotFoundException
 import org.springframework.stereotype.Component
 import java.util.*
@@ -65,11 +64,8 @@ class LoanService(
 
     fun create(token: String, l: LoanCreateInput, contractId: String): Loan = authService.authenticate(token, AccountPrivilege.WRITE) {
         val loan = l.convert(contractId)
-        if (loanDataSource.create(loan)) {
-            loan
-        } else {
-            throw BadRequestException("something went wrong while creating the loan")
-        }
+        loanDataSource.create(loan)
+        loan
     }
 
     fun setReturned(token: String, id: String) = authService.authenticate(token, AccountPrivilege.WRITE) {

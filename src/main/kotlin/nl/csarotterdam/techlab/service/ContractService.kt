@@ -51,14 +51,11 @@ class ContractService(
     fun create(token: String, c: ContractInput): ContractInputWithId = authService.authenticate(token, AccountPrivilege.WRITE) {
         val account = authService.readById(token, c.account_id)
         if (account.user.id == c.user_id) {
-            throw BadRequestException("you can't sign your own form")
+            throw BadRequestException("you can't create a self-signed form")
         }
         val contract = c.convert()
-        if (contractDataSource.create(contract)) {
-            contract
-        } else {
-            throw BadRequestException("something went wrong while creating the contract")
-        }
+        contractDataSource.create(contract)
+        contract
     }
 
     fun signByAccount(token: String, accountId: String) = authService.authenticate(token, AccountPrivilege.WRITE) {

@@ -1,9 +1,9 @@
 package nl.csarotterdam.techlab.controller
 
-import nl.csarotterdam.techlab.model.misc.AUTHORIZATION
 import nl.csarotterdam.techlab.model.db.Inventory
-import nl.csarotterdam.techlab.model.inventory.InventoryCategory
 import nl.csarotterdam.techlab.model.db.InventoryInput
+import nl.csarotterdam.techlab.model.inventory.InventoryCategory
+import nl.csarotterdam.techlab.model.misc.AUTHORIZATION
 import nl.csarotterdam.techlab.service.InventoryService
 import org.springframework.web.bind.annotation.*
 

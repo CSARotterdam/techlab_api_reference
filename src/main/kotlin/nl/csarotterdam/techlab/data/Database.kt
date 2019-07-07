@@ -58,11 +58,10 @@ class Database(
     fun execute(
             query: String,
             init: (PreparedStatement) -> Unit
-    ): Boolean {
+    ) {
         // Initialize connections
         val conn = getConnection()
         val ps = conn.prepareStatement(query)
-        val res: Boolean
 
         fun close(ps: PreparedStatement) {
             ps.close()
@@ -71,14 +70,13 @@ class Database(
         try {
             // Set query
             init(ps)
-            res = ps.execute()
+            ps.execute()
         } catch (e: Exception) {
             close(ps)
             throw e
         } finally {
             close(ps)
         }
-        return res
     }
 
     fun <T> executeQuery(

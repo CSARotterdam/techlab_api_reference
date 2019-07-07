@@ -75,7 +75,8 @@ CREATE TABLE "loan"
 (
     "id"          varchar(36) NOT NULL UNIQUE,
     "contract_id" varchar(36) NOT NULL,
-    "return_date" date        NOT NULL
+    "return_date" date        NOT NULL,
+    "returned_on" timestamp DEFAULT NULL
 );
 
 -- --------------------------------------------------------
@@ -109,7 +110,8 @@ CREATE TABLE "reservation"
     "contract_id"  varchar(36) NOT NULL,
     "from_date"    date        NOT NULL,
     "to_date"      date        NOT NULL,
-    "activated_on" timestamp DEFAULT NULL
+    "activated_on" timestamp DEFAULT NULL,
+    "deleted_on"   timestamp DEFAULT NULL
 );
 
 -- --------------------------------------------------------

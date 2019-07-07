@@ -1,9 +1,9 @@
 package nl.csarotterdam.techlab.model.db
 
+import nl.csarotterdam.techlab.model.auth.AccountRole
 import nl.csarotterdam.techlab.model.inventory.InventoryCategory
 import nl.csarotterdam.techlab.model.inventory.InventoryMutationSubtype
 import nl.csarotterdam.techlab.model.inventory.InventoryMutationType
-import nl.csarotterdam.techlab.model.auth.AccountRole
 import java.sql.Date
 import java.sql.Timestamp
 
@@ -49,7 +49,7 @@ data class Loan(
         val id: String,
         val contract_id: String,
         val return_date: Date,
-        val returned_on: Date?
+        val returned_on: Timestamp?
 )
 
 data class Account(

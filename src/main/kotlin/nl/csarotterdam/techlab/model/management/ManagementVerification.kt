@@ -16,9 +16,14 @@ enum class ManagementType {
 }
 
 enum class ManagementSubtype {
+    DEFAULT_ITEMS_EMPTY,
+    DEFAULT_ITEM_NO_AMOUNT,
+
     LOAN_RETURN_DATE,
+
     RESERVATION_FROM_DATE,
     RESERVATION_TO_DATE,
+
     INVENTORY_LOAN_TIME,
     INVENTORY_NOT_AVAILABLE,
     INVENTORY_RESERVED
@@ -28,6 +33,9 @@ abstract class ManagementInfo(
         val type: ManagementType,
         val subtype: ManagementSubtype
 )
+
+class InfoDefaultItemsEmpty : ManagementInfo(ERROR, DEFAULT_ITEMS_EMPTY)
+class InfoDefaultItemNoAmount : ManagementInfo(ERROR, DEFAULT_ITEM_NO_AMOUNT)
 
 class InfoLoanReturnDate : ManagementInfo(ERROR, LOAN_RETURN_DATE)
 
