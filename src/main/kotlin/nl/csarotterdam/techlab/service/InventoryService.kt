@@ -3,13 +3,16 @@ package nl.csarotterdam.techlab.service
 import nl.csarotterdam.techlab.data.InventoryDataSource
 import nl.csarotterdam.techlab.data.InventoryMutationDataSource
 import nl.csarotterdam.techlab.model.*
+import nl.csarotterdam.techlab.model.auth.AccountPrivilege
 import org.springframework.stereotype.Component
 import java.util.*
 
 @Component
 class InventoryService(
         private val inventoryDataSource: InventoryDataSource,
-        private val inventoryMutationDataSource: InventoryMutationDataSource
+        private val inventoryMutationDataSource: InventoryMutationDataSource,
+
+        private val authService: AuthService
 ) {
 
     object Mutation {
@@ -77,34 +80,44 @@ class InventoryService(
 
     fun getInventoryCategories() = InventoryCategory.values()
 
-    fun readMutationById(mutationId: String) = inventoryMutationDataSource.readById(mutationId)
-            ?.convert() ?: throw NotFoundException("inventory mutation with id '$mutationId' not found")
+    fun readMutationById(token: String, mutationId: String) = authService.authenticate(token, AccountPrivilege.READ) {
+        inventoryMutationDataSource.readById(mutationId)?.convert()
+                ?: throw NotFoundException("inventory mutation with id '$mutationId' not found")
+    }
 
-    fun readAllMutationsByInventoryId(inventoryId: String) = inventoryMutationDataSource
-            .readAllByInventoryId(inventoryId)
-            .map { it.convert() }
+    fun readAllMutationsByInventoryId(token: String, inventoryId: String) = authService.authenticate(token, AccountPrivilege.READ) {
+        inventoryMutationDataSource
+                .readAllByInventoryId(inventoryId)
+                .map { it.convert() }
+    }
 
-    fun readAllMutationsByLoanId(loanId: String) = inventoryMutationDataSource.readAllByLoanId(loanId)
-            .map { it.convert() }
+    fun readAllMutationsByLoanId(token: String, loanId: String) = authService.authenticate(token, AccountPrivilege.READ) {
+        inventoryMutationDataSource.readAllByLoanId(loanId)
+                .map { it.convert() }
+    }
 
-    fun createInventory(i: InventoryInput): Boolean {
+    fun createInventory(token: String, i: InventoryInput): Boolean = authService.authenticate(token, AccountPrivilege.ADMIN) {
         if (i.initial_stock_size < 0) {
             throw BadRequestException("initial stock size must be 0 or higher")
         }
         val (inventory, mutation) = i.convert()
-        return inventoryDataSource.create(inventory) && createMutation(mutation)
+        inventoryDataSource.create(inventory) && createMutation(token, mutation)
     }
 
-    fun createMutation(im: InventoryMutationInput) = inventoryMutationDataSource.create(im)
+    private fun createMutation(token: String, im: InventoryMutationInput) = authService.authenticate(token, AccountPrivilege.WRITE) {
+        inventoryMutationDataSource.create(im)
+    }
 
-    fun createMutationsForLoan(l: LoanCreateInput, id: String): Boolean {
+    fun createMutationsForLoan(token: String, l: LoanCreateInput, id: String): Boolean = authService.authenticate(token, AccountPrivilege.WRITE) {
         var successful = true
         val inventoryMutations = Mutation.getLoanMutations(l, id)
         inventoryMutations.forEach { mutation ->
-            successful = successful && createMutation(mutation)
+            successful = successful && createMutation(token, mutation)
         }
-        return successful
+        successful
     }
 
-    fun updateInventory(i: Inventory) = inventoryDataSource.update(i)
+    fun updateInventory(token: String, i: Inventory) = authService.authenticate(token, AccountPrivilege.ADMIN) {
+        inventoryDataSource.update(i)
+    }
 }

@@ -1,5 +1,6 @@
 package nl.csarotterdam.techlab.model
 
+import nl.csarotterdam.techlab.model.auth.AccountRole
 import java.sql.Date
 import java.sql.Timestamp
 

@@ -2,6 +2,7 @@ package nl.csarotterdam.techlab.service
 
 import nl.csarotterdam.techlab.data.LoanDataSource
 import nl.csarotterdam.techlab.model.*
+import nl.csarotterdam.techlab.model.auth.AccountPrivilege
 import org.springframework.stereotype.Component
 import java.util.*
 
@@ -10,13 +11,14 @@ class LoanService(
         private val loanDataSource: LoanDataSource,
 
         private val contractService: ContractService,
-        private val inventoryService: InventoryService
+        private val inventoryService: InventoryService,
+        private val authService: AuthService
 ) {
 
-    private fun Loan.convert(): LoanOutput = LoanOutput(
+    private fun Loan.convert(token: String): LoanOutput = LoanOutput(
             id = id,
-            contract = contractService.readById(contract_id),
-            items = inventoryService.readAllMutationsByLoanId(id)
+            contract = contractService.readById(token, contract_id),
+            items = inventoryService.readAllMutationsByLoanId(token, id)
                     .filter { it.type == InventoryMutationType.ADD && it.subtype == InventoryMutationSubtype.LOAN }
                     .map { it.convert() },
             return_date = return_date,
@@ -35,29 +37,38 @@ class LoanService(
             amount = amount
     )
 
-    fun readAllActiveLoans() = loanDataSource.readAllActiveLoans()
-            .map { it.convert() }
+    fun readAllActiveLoans(token: String) = authService.authenticate(token, AccountPrivilege.READ) {
+        loanDataSource.readAllActiveLoans().map { it.convert(token) }
+    }
 
-    fun readById(id: String) = loanDataSource.readById(id)
-            ?.convert() ?: throw NotFoundException("loan with id '$id' not found")
+    fun readById(token: String, id: String) = authService.authenticate(token, AccountPrivilege.READ) {
+        loanDataSource.readById(id)?.convert(token)
+                ?: throw NotFoundException("loan with id '$id' not found")
+    }
 
-    fun readByContractId(contractId: String) = loanDataSource.readByContractId(contractId)
-            ?.convert() ?: throw NotFoundException("loan with contract id '$contractId' not found")
+    fun readByContractId(token: String, contractId: String) = authService.authenticate(token, AccountPrivilege.READ) {
+        loanDataSource.readByContractId(contractId)?.convert(token)
+                ?: throw NotFoundException("loan with contract id '$contractId' not found")
+    }
 
-    fun readActiveLoansByUserId(userId: String) = loanDataSource.readActiveLoansByUserId(userId)
-            .map { it.convert() }
+    fun readActiveLoansByUserId(token: String, userId: String) = authService.authenticate(token, AccountPrivilege.READ) {
+        loanDataSource.readActiveLoansByUserId(userId).map { it.convert(token) }
+    }
 
-    fun readByUserId(userId: String) = loanDataSource.readByUserId(userId)
-            .map { it.convert() }
+    fun readByUserId(token: String, userId: String) = authService.authenticate(token, AccountPrivilege.READ) {
+        loanDataSource.readByUserId(userId).map { it.convert(token) }
+    }
 
-    fun create(l: LoanCreateInput, contractId: String): Loan {
+    fun create(token: String, l: LoanCreateInput, contractId: String): Loan = authService.authenticate(token, AccountPrivilege.WRITE) {
         val loan = l.convert(contractId)
         if (loanDataSource.create(loan)) {
-            return loan
+            loan
         } else {
             throw BadRequestException("something went wrong while creating the loan")
         }
     }
 
-    fun setReturned(id: String) = loanDataSource.setReturned(id)
+    fun setReturned(token: String, id: String) = authService.authenticate(token, AccountPrivilege.WRITE) {
+        loanDataSource.setReturned(id)
+    }
 }

@@ -3,6 +3,7 @@ package nl.csarotterdam.techlab.service
 import nl.csarotterdam.techlab.data.ReservationDataSource
 import nl.csarotterdam.techlab.data.ReservationItemDataSource
 import nl.csarotterdam.techlab.model.*
+import nl.csarotterdam.techlab.model.auth.AccountPrivilege
 import org.springframework.stereotype.Component
 
 @Component
@@ -11,13 +12,14 @@ class ReservationService(
         private val reservationItemDataSource: ReservationItemDataSource,
 
         private val contractService: ContractService,
-        private val inventoryService: InventoryService
+        private val inventoryService: InventoryService,
+        private val authService: AuthService
 ) {
 
-    private fun Reservation.convert(): ReservationOutput = ReservationOutput(
+    private fun Reservation.convert(token: String): ReservationOutput = ReservationOutput(
             id = id,
-            contract = contractService.readById(contract_id),
-            items = readReservationItemsById(id),
+            contract = contractService.readById(token, contract_id),
+            items = readReservationItemsById(token, id),
             from_date = from_date,
             to_date = to_date,
             activated_on = activated_on
@@ -29,31 +31,42 @@ class ReservationService(
             amount = amount
     )
 
-    fun listCurrent() = reservationDataSource.listCurrent()
-            .map { it.convert() }
+    fun listCurrent(token: String) = authService.authenticate(token, AccountPrivilege.READ) {
+        reservationDataSource.listCurrent().map { it.convert(token) }
+    }
 
-    fun list() = reservationDataSource.list()
-            .map { it.convert() }
+    fun list(token: String) = authService.authenticate(token, AccountPrivilege.READ) {
+        reservationDataSource.list().map { it.convert(token) }
+    }
 
-    fun readById(id: String) = reservationDataSource.readById(id)
-            ?.convert() ?: throw NotFoundException("reservation with id '$id' not found")
+    fun readById(token: String, id: String) = authService.authenticate(token, AccountPrivilege.READ) {
+        reservationDataSource.readById(id)?.convert(token)
+                ?: throw NotFoundException("reservation with id '$id' not found")
+    }
 
-    fun readByUserId(userId: String) = reservationDataSource.readByUserId(userId)
-            .map { it.convert() }
+    fun readByUserId(token: String, userId: String) = authService.authenticate(token, AccountPrivilege.READ) {
+        reservationDataSource.readByUserId(userId).map { it.convert(token) }
+    }
 
-    fun create(reservation: Reservation) = reservationDataSource.create(reservation)
+    fun create(token: String, reservation: Reservation) = authService.authenticate(token, AccountPrivilege.WRITE) {
+        reservationDataSource.create(reservation)
+    }
 
-    fun setActivated(id: String): Boolean {
-        val reservation = readById(id)
+    fun setActivated(token: String, id: String): Boolean = authService.authenticate(token, AccountPrivilege.WRITE) {
+        val reservation = readById(token, id)
         if (reservation.activated_on != null) {
             throw BadRequestException("this reservation is already used")
         }
-        return reservationDataSource.setActivated(id)
+        reservationDataSource.setActivated(id)
     }
 
-    fun delete(id: String) = reservationDataSource.delete(id)
+    fun delete(token: String, id: String) = authService.authenticate(token, AccountPrivilege.WRITE) {
+        reservationDataSource.delete(id)
+    }
 
-    private fun readReservationItemsById(id: String) = reservationItemDataSource
-            .readByReservationId(id)
-            .map { it.convert() }
+    private fun readReservationItemsById(token: String, id: String) = authService.authenticate(token, AccountPrivilege.READ) {
+        reservationItemDataSource
+                .readByReservationId(id)
+                .map { it.convert() }
+    }
 }

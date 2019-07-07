@@ -1,6 +1,7 @@
 package nl.csarotterdam.techlab.service
 
 import nl.csarotterdam.techlab.model.*
+import nl.csarotterdam.techlab.model.auth.AccountPrivilege
 import org.springframework.stereotype.Component
 import java.util.*
 
@@ -9,7 +10,8 @@ class InventoryAndReservationManagementService(
         private val inventoryService: InventoryService,
         private val loanService: LoanService,
         private val reservationService: ReservationService,
-        private val contractService: ContractService
+        private val contractService: ContractService,
+        private val authService: AuthService
 ) {
 
     private fun LoanCreateInput.convertToContract(): ContractInput = ContractInput(
@@ -30,28 +32,28 @@ class InventoryAndReservationManagementService(
             activated_on = null
     )
 
-    fun createLoan(l: LoanCreateInput): LoanOutput {
+    fun createLoan(token: String, l: LoanCreateInput): LoanOutput = authService.authenticate(token, AccountPrivilege.WRITE) {
         // TODO: perform inventory checks
         // TODO: perform inventory availability checks
         // TODO: perform reservation checks
         // create contact for loan
-        val contract = contractService.create(l.convertToContract())
+        val contract = contractService.create(token, l.convertToContract())
 
         // setup the loan and create inventory mutations
-        val loan = loanService.create(l, contract.id)
-        val successfullyCreatedMutations = inventoryService.createMutationsForLoan(l, loan.id)
+        val loan = loanService.create(token, l, contract.id)
+        val successfullyCreatedMutations = inventoryService.createMutationsForLoan(token, l, loan.id)
         if (!successfullyCreatedMutations) {
             throw BadRequestException("something went wrong while creating the mutations for the loan")
         }
-        return loanService.readById(loan.id)
+        loanService.readById(token, loan.id)
     }
 
-    fun createReservation(r: ReservationInput): Boolean {
+    fun createReservation(token: String, r: ReservationInput): Boolean = authService.authenticate(token, AccountPrivilege.WRITE) {
         // TODO: perform inventory checks
         // TODO: perform inventory availability checks
         // TODO: perform reservation collision checks
-        val contract = contractService.create(r.convert())
+        val contract = contractService.create(token, r.convert())
         val reservation = r.convert(contract)
-        return reservationService.create(reservation)
+        reservationService.create(token, reservation)
     }
 }

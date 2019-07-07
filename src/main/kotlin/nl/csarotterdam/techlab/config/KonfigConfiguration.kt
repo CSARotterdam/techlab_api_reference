@@ -25,6 +25,8 @@ class KonfigConfiguration {
 }
 
 object server : PropertyGroup() {
+    val secret by stringType
+
     object db : PropertyGroup() {
         val host by stringType
         val port by intType

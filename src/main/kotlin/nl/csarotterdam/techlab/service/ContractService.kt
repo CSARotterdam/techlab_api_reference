@@ -2,6 +2,7 @@ package nl.csarotterdam.techlab.service
 
 import nl.csarotterdam.techlab.data.ContractDataSource
 import nl.csarotterdam.techlab.model.*
+import nl.csarotterdam.techlab.model.auth.AccountPrivilege
 import org.springframework.stereotype.Component
 import java.util.*
 
@@ -9,14 +10,13 @@ import java.util.*
 class ContractService(
         private val contractDataSource: ContractDataSource,
 
-        private val accountService: AccountService,
-        private val userService: UserService
+        private val authService: AuthService
 ) {
 
-    private fun Contract.convert(): ContractOutput = ContractOutput(
+    private fun Contract.convert(token: String): ContractOutput = ContractOutput(
             id = id,
-            account = accountService.readById(account_id),
-            user = userService.readById(user_id),
+            account = authService.readById(token, account_id),
+            user = authService.readUserById(token, user_id),
             created_time = created_time,
             signed_by_account_on = signed_by_account_on,
             signed_by_user_on = signed_by_user_on
@@ -28,29 +28,39 @@ class ContractService(
             user_id = user_id
     )
 
-    fun readById(id: String) = contractDataSource.readById(id)
-            ?.convert() ?: throw NotFoundException("contract with id '$id' not found")
+    fun readById(token: String, id: String) = authService.authenticate(token, AccountPrivilege.READ) {
+        contractDataSource.readById(id)
+                ?.convert(token) ?: throw NotFoundException("contract with id '$id' not found")
+    }
 
-    fun readByAccountId(accountId: String) = contractDataSource.readByAccountId(accountId)
-            .map { it.convert() }
+    fun readByAccountId(token: String, accountId: String) = authService.authenticate(token, AccountPrivilege.READ) {
+        contractDataSource.readByAccountId(accountId)
+                .map { it.convert(token) }
+    }
 
-    fun readByUserId(userId: String) = contractDataSource.readByUserId(userId)
-            .map { it.convert() }
+    fun readByUserId(token: String, userId: String) = authService.authenticate(token, AccountPrivilege.READ) {
+        contractDataSource.readByUserId(userId)
+                .map { it.convert(token) }
+    }
 
-    fun create(c: ContractInput): ContractInputWithId {
-        val account = accountService.readById(c.account_id)
+    fun create(token: String, c: ContractInput): ContractInputWithId = authService.authenticate(token, AccountPrivilege.WRITE) {
+        val account = authService.readById(token, c.account_id)
         if (account.user.id == c.user_id) {
             throw BadRequestException("you can't sign your own form")
         }
         val contract = c.convert()
         if (contractDataSource.create(contract)) {
-            return contract
+            contract
         } else {
             throw BadRequestException("something went wrong while creating the contract")
         }
     }
 
-    fun signByAccount(accountId: String) = contractDataSource.signByAccount(accountId)
+    fun signByAccount(token: String, accountId: String) = authService.authenticate(token, AccountPrivilege.WRITE) {
+        contractDataSource.signByAccount(accountId)
+    }
 
-    fun signByUser(userId: String) = contractDataSource.signByUser(userId)
+    fun signByUser(token: String, userId: String) = authService.authenticate(token, AccountPrivilege.UNAUTHORIZED_WRITE) {
+        contractDataSource.signByUser(userId)
+    }
 }

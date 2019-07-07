@@ -14,6 +14,8 @@ buildscript {
 
         kotlin_logging_version = '1.4.3'
 
+        jwt_version = '0.2'
+        
         commons_codec_version = '1.12'
 
         gson_version = '2.8.5'
@@ -73,9 +75,12 @@ dependencies {
     // Logging
     implementation "io.github.microutils:kotlin-logging:$kotlin_logging_version"
 
+    // Auth
+    implementation "io.jsonwebtoken:jjwt:$jwt_version"
+
     // Cryptography
     implementation "commons-codec:commons-codec:$commons_codec_version"
-    
+
     // Misc
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jackson_module_kotlin_version"
 }
