@@ -43,7 +43,8 @@ CREATE TABLE "user"
     "code"          varchar(36) NOT NULL,
     "mail"          text        NOT NULL,
     "mobile_number" text        NOT NULL,
-    "name"          text        NOT NULL
+    "name"          text        NOT NULL,
+    "salt"          text        NOT NULL
 );
 
 -- --------------------------------------------------------
@@ -86,13 +87,13 @@ CREATE TABLE "loan"
 DROP TABLE IF EXISTS "account" CASCADE;
 CREATE TABLE "account"
 (
-    "id"           varchar(36) NOT NULL UNIQUE,
-    "user_id"      varchar(36) NOT NULL,
-    "username"     varchar(36) NOT NULL,
-    "passwordHash" text        NOT NULL,
-    "salt"         text        NOT NULL,
-    "role"         text        NOT NULL,
-    "active"       boolean     NOT NULL
+    "id"            varchar(36) NOT NULL UNIQUE,
+    "user_id"       varchar(36) NOT NULL,
+    "username"      varchar(36) NOT NULL,
+    "password_hash" text        NOT NULL,
+    "salt"          text        NOT NULL,
+    "role"          text        NOT NULL,
+    "active"        boolean     NOT NULL
 );
 
 -- --------------------------------------------------------
@@ -187,4 +188,14 @@ ALTER TABLE "reservationItem"
 
 --
 -- Setup Admin Account
--- TODO:
+--
+INSERT INTO "user" ("id", "code", "mail", "mobile_number", "name", "salt")
+VALUES ('430cebf0-7dde-4cae-9765-8c93e3ec0bae', 'techlab', 'O/hZeydu0Si55c6aG5olnCoko6NXHZHE3tcfrcm4sb0=',
+        'jqIty4xIkXV+gVnVbdZErw==', 'zYQ0no6NWlxcw8t23ICNsA==',
+        'bbd8a48fad738abfc6cdcf2cf5128ef1a79a8098e220fd8550077cc6601daec00c28c2cd1c49191e009f032789b0003d6e58ce08376143d0c1902c136cdaac5d');
+
+INSERT INTO "account" ("id", "user_id", "username", "password_hash", "salt", "role", "active")
+VALUES ('812db315-adba-4e02-aaf2-0b82ee150347', '430cebf0-7dde-4cae-9765-8c93e3ec0bae', 'techlab',
+        'b84c65dc227bec4188c854d7c84c5be952ecd6adfb1ed087c4b7b930fed4022771d1332fd854d98e2106db537b7e6b3ffcdcf16471c263b71efc95c4a244014d',
+        'eb278347501b777a15eeede204d648064cbba551def0ac7cbe2e739235c31e1e7e2d44e169cb555640501811485f10045737cea0a7a21618dca8533960984198',
+        'ADMIN', 't');

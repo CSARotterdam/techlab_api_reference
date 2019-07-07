@@ -25,6 +25,7 @@ class KonfigConfiguration {
 }
 
 object server : PropertyGroup() {
+    val salt by stringType
     val secret by stringType
 
     object db : PropertyGroup() {

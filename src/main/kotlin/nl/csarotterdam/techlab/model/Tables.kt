@@ -28,7 +28,8 @@ data class User(
         val code: String,
         val mail: String,
         val mobile_number: String,
-        val name: String
+        val name: String,
+        val salt: String
 )
 
 data class Contract(
@@ -52,7 +53,7 @@ data class Account(
         val id: String,
         val user_id: String,
         val username: String,
-        val passwordHash: String,
+        val password_hash: String,
         val salt: String,
         val role: AccountRole,
         val active: Boolean

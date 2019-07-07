@@ -13,7 +13,7 @@ class AccountDataSource : DataSource<Account>() {
             id = rs.getString(1),
             user_id = rs.getString(2),
             username = rs.getString(3),
-            passwordHash = rs.getString(4),
+            password_hash = rs.getString(4),
             salt = rs.getString(5),
             role = AccountRole.valueOf(rs.getString(6)),
             active = rs.getBoolean(7)
@@ -48,7 +48,7 @@ class AccountDataSource : DataSource<Account>() {
                     it.setString(1, id)
                     it.setString(2, user_id)
                     it.setString(3, username)
-                    it.setString(4, passwordHash)
+                    it.setString(4, password_hash)
                     it.setString(5, salt)
                     it.setString(6, role.toString())
                     it.setBoolean(7, active)

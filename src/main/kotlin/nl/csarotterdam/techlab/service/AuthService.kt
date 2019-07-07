@@ -14,6 +14,7 @@ import nl.csarotterdam.techlab.model.auth.AccountPrivilege
 import nl.csarotterdam.techlab.model.auth.AccountRole
 import nl.csarotterdam.techlab.model.auth.Credentials
 import nl.csarotterdam.techlab.model.auth.CredentialsToken
+import nl.csarotterdam.techlab.util.EncryptionUtils
 import org.springframework.stereotype.Component
 import java.time.ZonedDateTime
 import java.util.*
@@ -22,6 +23,8 @@ import java.util.*
 class AuthService(
         private val accountDataSource: AccountDataSource,
         private val userDataSource: UserDataSource,
+
+        private val encryptionUtils: EncryptionUtils,
 
         config: Configuration
 ) {
@@ -40,23 +43,18 @@ class AuthService(
             active = active
     )
 
-    // TODO: encryption
     private fun AccountInput.convert(): Account {
-        val salt = UUID.randomUUID().toString()
-        val passwordHash = hashPassword(password, salt)
+        val salt = encryptionUtils.getSalt()
+        val passwordHash = encryptionUtils.hashWithCryptoSaltAndServerSalt(password, salt)
         return Account(
                 id = UUID.randomUUID().toString(),
                 user_id = user_id,
                 username = username,
-                passwordHash = passwordHash,
+                password_hash = passwordHash,
                 salt = salt,
                 role = role,
                 active = true
         )
-    }
-
-    private fun hashPassword(password: String, salt: String): String {
-        return password
     }
 
     fun listActive(token: String) = authenticate(token, AccountPrivilege.ADMIN) {
@@ -84,7 +82,7 @@ class AuthService(
         val account = accountDataSource.readById(id)
                 ?: throw NotFoundException("account with '$id' not found")
 
-        val passwordHash = hashPassword(password, account.salt)
+        val passwordHash = encryptionUtils.hashWithCryptoSaltAndServerSalt(password, account.salt)
         accountDataSource.setPassword(id, passwordHash)
     }
 
@@ -111,25 +109,26 @@ class AuthService(
             code = code,
             mail = mail,
             mobile_number = mobile_number,
-            name = name
+            name = name,
+            salt = encryptionUtils.getSalt()
     ).encrypt()
 
-    // TODO: encryption
     private fun User.encrypt(): User = User(
             id = id,
             code = code,
-            mail = mail,
-            mobile_number = mobile_number,
-            name = name
+            mail = encryptionUtils.encryptNonNull(mail, salt),
+            mobile_number = encryptionUtils.encryptNonNull(mobile_number, salt),
+            name = encryptionUtils.encryptNonNull(name, salt),
+            salt = salt
     )
 
-    // TODO: decryption
     private fun User.decrypt(): User = User(
             id = id,
             code = code,
-            mail = mail,
-            mobile_number = mobile_number + "2",
-            name = name
+            mail = encryptionUtils.decryptNonNull(mail, salt),
+            mobile_number = encryptionUtils.decryptNonNull(mobile_number, salt),
+            name = encryptionUtils.decryptNonNull(name, salt),
+            salt = salt
     )
 
     fun readUserById(token: String, id: String) = authenticate(token, AccountPrivilege.READ) {
@@ -153,8 +152,8 @@ class AuthService(
         val account = accountDataSource.readByUsername(credentials.username)
                 ?: throw UnauthorizedException("incorrect username")
 
-        val passwordHash = hashPassword(credentials.password, account.salt)
-        if (passwordHash == account.passwordHash) {
+        val passwordHash = encryptionUtils.hashWithCryptoSaltAndServerSalt(credentials.password, account.salt)
+        if (passwordHash == account.password_hash) {
             return account.convert(loginToken)
         } else {
             throw UnauthorizedException("wrong credentials")

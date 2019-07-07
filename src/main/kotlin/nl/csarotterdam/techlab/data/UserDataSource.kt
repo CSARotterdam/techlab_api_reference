@@ -13,7 +13,8 @@ class UserDataSource : DataSource<User>() {
             code = rs.getString(2),
             mail = rs.getString(3),
             mobile_number = rs.getString(4),
-            name = rs.getString(5)
+            name = rs.getString(5),
+            salt = rs.getString(6)
     )
 
     fun readById(id: String) = database.assertOneResult(database.executeQuery(
@@ -24,7 +25,7 @@ class UserDataSource : DataSource<User>() {
 
     fun readByCode(code: String) = database.executeQuery(
             query = config[user.readByCode],
-            init = { it.setString(2, "%$code%") },
+            init = { it.setString(1, "%$code%") },
             map = this::read
     )
 
@@ -37,6 +38,7 @@ class UserDataSource : DataSource<User>() {
                     it.setString(3, mail)
                     it.setString(4, mobile_number)
                     it.setString(5, name)
+                    it.setString(6, salt)
                 }
             }
     )
