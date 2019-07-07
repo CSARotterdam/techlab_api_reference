@@ -1,8 +1,8 @@
 package nl.csarotterdam.techlab.controller
 
-import nl.csarotterdam.techlab.model.AUTHORIZATION
-import nl.csarotterdam.techlab.model.User
-import nl.csarotterdam.techlab.model.UserInput
+import nl.csarotterdam.techlab.model.misc.AUTHORIZATION
+import nl.csarotterdam.techlab.model.db.User
+import nl.csarotterdam.techlab.model.db.UserInput
 import nl.csarotterdam.techlab.service.AuthService
 import org.springframework.web.bind.annotation.*
 

@@ -1,8 +1,8 @@
 package nl.csarotterdam.techlab.data
 
 import nl.csarotterdam.techlab.config.contract
-import nl.csarotterdam.techlab.model.Contract
-import nl.csarotterdam.techlab.model.ContractInputWithId
+import nl.csarotterdam.techlab.model.db.Contract
+import nl.csarotterdam.techlab.model.db.ContractInputWithId
 import nl.csarotterdam.techlab.util.toResultOrNull
 import org.springframework.stereotype.Component
 import java.sql.ResultSet

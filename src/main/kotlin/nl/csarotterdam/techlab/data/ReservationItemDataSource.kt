@@ -1,7 +1,7 @@
 package nl.csarotterdam.techlab.data
 
 import nl.csarotterdam.techlab.config.reservationItem
-import nl.csarotterdam.techlab.model.ReservationItem
+import nl.csarotterdam.techlab.model.db.ReservationItem
 import org.springframework.stereotype.Component
 import java.sql.ResultSet
 

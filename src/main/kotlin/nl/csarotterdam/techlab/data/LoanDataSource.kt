@@ -1,7 +1,7 @@
 package nl.csarotterdam.techlab.data
 
 import nl.csarotterdam.techlab.config.loan
-import nl.csarotterdam.techlab.model.Loan
+import nl.csarotterdam.techlab.model.db.Loan
 import nl.csarotterdam.techlab.util.setValueCanBeNull
 import nl.csarotterdam.techlab.util.toResultOrNull
 import org.springframework.stereotype.Component

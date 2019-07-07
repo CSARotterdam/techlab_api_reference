@@ -1,8 +1,12 @@
 package nl.csarotterdam.techlab.service
 
 import nl.csarotterdam.techlab.data.LoanDataSource
-import nl.csarotterdam.techlab.model.*
 import nl.csarotterdam.techlab.model.auth.AccountPrivilege
+import nl.csarotterdam.techlab.model.db.*
+import nl.csarotterdam.techlab.model.inventory.InventoryMutationSubtype
+import nl.csarotterdam.techlab.model.inventory.InventoryMutationType
+import nl.csarotterdam.techlab.model.misc.BadRequestException
+import nl.csarotterdam.techlab.model.misc.NotFoundException
 import org.springframework.stereotype.Component
 import java.util.*
 

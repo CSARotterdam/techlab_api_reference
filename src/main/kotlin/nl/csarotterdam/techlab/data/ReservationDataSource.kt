@@ -1,7 +1,7 @@
 package nl.csarotterdam.techlab.data
 
 import nl.csarotterdam.techlab.config.reservation
-import nl.csarotterdam.techlab.model.Reservation
+import nl.csarotterdam.techlab.model.db.Reservation
 import nl.csarotterdam.techlab.util.setValueCanBeNull
 import nl.csarotterdam.techlab.util.toResultOrNull
 import org.springframework.stereotype.Component

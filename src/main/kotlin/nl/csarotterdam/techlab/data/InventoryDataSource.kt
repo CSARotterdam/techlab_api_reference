@@ -1,8 +1,8 @@
 package nl.csarotterdam.techlab.data
 
 import nl.csarotterdam.techlab.config.inventory
-import nl.csarotterdam.techlab.model.Inventory
-import nl.csarotterdam.techlab.model.InventoryCategory
+import nl.csarotterdam.techlab.model.db.Inventory
+import nl.csarotterdam.techlab.model.inventory.InventoryCategory
 import org.springframework.stereotype.Component
 import java.sql.ResultSet
 

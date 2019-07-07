@@ -1,8 +1,8 @@
 package nl.csarotterdam.techlab.controller
 
 import io.swagger.annotations.ApiParam
-import nl.csarotterdam.techlab.model.AUTHORIZATION
-import nl.csarotterdam.techlab.model.AccountInput
+import nl.csarotterdam.techlab.model.misc.AUTHORIZATION
+import nl.csarotterdam.techlab.model.db.AccountInput
 import nl.csarotterdam.techlab.model.auth.AccountRole
 import nl.csarotterdam.techlab.service.AuthService
 import org.springframework.web.bind.annotation.*

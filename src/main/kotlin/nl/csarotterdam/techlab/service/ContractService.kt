@@ -1,8 +1,13 @@
 package nl.csarotterdam.techlab.service
 
 import nl.csarotterdam.techlab.data.ContractDataSource
-import nl.csarotterdam.techlab.model.*
 import nl.csarotterdam.techlab.model.auth.AccountPrivilege
+import nl.csarotterdam.techlab.model.db.Contract
+import nl.csarotterdam.techlab.model.db.ContractInput
+import nl.csarotterdam.techlab.model.db.ContractInputWithId
+import nl.csarotterdam.techlab.model.db.ContractOutput
+import nl.csarotterdam.techlab.model.misc.BadRequestException
+import nl.csarotterdam.techlab.model.misc.NotFoundException
 import org.springframework.stereotype.Component
 import java.util.*
 

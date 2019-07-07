@@ -1,5 +1,8 @@
-package nl.csarotterdam.techlab.model
+package nl.csarotterdam.techlab.model.db
 
+import nl.csarotterdam.techlab.model.inventory.InventoryCategory
+import nl.csarotterdam.techlab.model.inventory.InventoryMutationSubtype
+import nl.csarotterdam.techlab.model.inventory.InventoryMutationType
 import nl.csarotterdam.techlab.model.auth.AccountRole
 import java.sql.Date
 import java.sql.Timestamp

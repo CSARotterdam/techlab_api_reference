@@ -1,4 +1,4 @@
-package nl.csarotterdam.techlab.model
+package nl.csarotterdam.techlab.model.misc
 
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ResponseStatus

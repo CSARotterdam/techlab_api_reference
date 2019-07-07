@@ -1,10 +1,10 @@
 package nl.csarotterdam.techlab.data
 
 import nl.csarotterdam.techlab.config.inventoryMutation
-import nl.csarotterdam.techlab.model.InventoryMutation
-import nl.csarotterdam.techlab.model.InventoryMutationInput
-import nl.csarotterdam.techlab.model.InventoryMutationSubtype
-import nl.csarotterdam.techlab.model.InventoryMutationType
+import nl.csarotterdam.techlab.model.db.InventoryMutation
+import nl.csarotterdam.techlab.model.db.InventoryMutationInput
+import nl.csarotterdam.techlab.model.inventory.InventoryMutationSubtype
+import nl.csarotterdam.techlab.model.inventory.InventoryMutationType
 import nl.csarotterdam.techlab.util.setValueCanBeNull
 import nl.csarotterdam.techlab.util.toResultOrNull
 import org.springframework.stereotype.Component

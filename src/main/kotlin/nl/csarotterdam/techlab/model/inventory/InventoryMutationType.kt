@@ -1,4 +1,4 @@
-package nl.csarotterdam.techlab.model
+package nl.csarotterdam.techlab.model.inventory
 
 enum class InventoryMutationType {
     ADD, REMOVE

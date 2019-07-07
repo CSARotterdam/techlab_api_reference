@@ -1,6 +1,6 @@
 package nl.csarotterdam.techlab.model.auth
 
-import nl.csarotterdam.techlab.model.UserOutput
+import nl.csarotterdam.techlab.model.db.UserOutput
 
 data class Credentials(
         val username: String,

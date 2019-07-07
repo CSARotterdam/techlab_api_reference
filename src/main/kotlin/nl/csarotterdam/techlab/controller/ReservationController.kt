@@ -1,6 +1,6 @@
 package nl.csarotterdam.techlab.controller
 
-import nl.csarotterdam.techlab.model.AUTHORIZATION
+import nl.csarotterdam.techlab.model.misc.AUTHORIZATION
 import nl.csarotterdam.techlab.service.ReservationService
 import org.springframework.web.bind.annotation.*
 

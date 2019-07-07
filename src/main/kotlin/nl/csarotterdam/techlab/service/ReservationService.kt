@@ -2,8 +2,13 @@ package nl.csarotterdam.techlab.service
 
 import nl.csarotterdam.techlab.data.ReservationDataSource
 import nl.csarotterdam.techlab.data.ReservationItemDataSource
-import nl.csarotterdam.techlab.model.*
 import nl.csarotterdam.techlab.model.auth.AccountPrivilege
+import nl.csarotterdam.techlab.model.db.Reservation
+import nl.csarotterdam.techlab.model.db.ReservationItem
+import nl.csarotterdam.techlab.model.db.ReservationItemOutput
+import nl.csarotterdam.techlab.model.db.ReservationOutput
+import nl.csarotterdam.techlab.model.misc.BadRequestException
+import nl.csarotterdam.techlab.model.misc.NotFoundException
 import org.springframework.stereotype.Component
 
 @Component

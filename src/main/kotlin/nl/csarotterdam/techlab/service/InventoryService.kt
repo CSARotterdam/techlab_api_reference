@@ -2,8 +2,14 @@ package nl.csarotterdam.techlab.service
 
 import nl.csarotterdam.techlab.data.InventoryDataSource
 import nl.csarotterdam.techlab.data.InventoryMutationDataSource
-import nl.csarotterdam.techlab.model.*
 import nl.csarotterdam.techlab.model.auth.AccountPrivilege
+import nl.csarotterdam.techlab.model.db.*
+import nl.csarotterdam.techlab.model.inventory.InventoryCategory
+import nl.csarotterdam.techlab.model.inventory.InventoryInfo
+import nl.csarotterdam.techlab.model.inventory.InventoryMutationSubtype.*
+import nl.csarotterdam.techlab.model.inventory.InventoryMutationType.ADD
+import nl.csarotterdam.techlab.model.misc.BadRequestException
+import nl.csarotterdam.techlab.model.misc.NotFoundException
 import org.springframework.stereotype.Component
 import java.util.*
 
@@ -19,8 +25,8 @@ class InventoryService(
         fun getLoanMutations(loan: LoanCreateInput, loanId: String): List<InventoryMutationInput> = loan.items.map {
             InventoryMutationInput(
                     inventory_id = it.inventory_id,
-                    type = InventoryMutationType.ADD,
-                    subtype = InventoryMutationSubtype.LOAN,
+                    type = ADD,
+                    subtype = LOAN,
                     loan_id = loanId,
                     amount = it.amount
             )
@@ -55,8 +61,8 @@ class InventoryService(
         )
         val mutation = InventoryMutationInput(
                 inventory_id = inventory.id,
-                type = InventoryMutationType.ADD,
-                subtype = InventoryMutationSubtype.STOCK,
+                type = ADD,
+                subtype = STOCK,
                 loan_id = null,
                 amount = this.initial_stock_size
         )
@@ -90,6 +96,29 @@ class InventoryService(
         inventoryMutationDataSource
                 .readAllByInventoryId(inventoryId)
                 .map { it.convert() }
+    }
+
+    fun readInventoryInfoByInventoryId(token: String, inventoryId: String): InventoryInfo = authService.authenticate(token, AccountPrivilege.READ) {
+        val mutations = readAllMutationsByInventoryId(token, inventoryId)
+
+        var stockAmount = 0
+        var loanedAmount = 0
+        var brokenAmount = 0
+
+        mutations.forEach {
+            when (it.subtype) {
+                STOCK -> stockAmount += it.amount * if (it.type == ADD) 1 else -1
+                LOAN -> loanedAmount += it.amount * if (it.type == ADD) 1 else -1
+                BROKEN -> brokenAmount += it.amount * if (it.type == ADD) 1 else -1
+            }
+        }
+
+        InventoryInfo(
+                inventory_id = inventoryId,
+                stock_amount = stockAmount,
+                loaned_amount = loanedAmount,
+                broken_amount = brokenAmount
+        )
     }
 
     fun readAllMutationsByLoanId(token: String, loanId: String) = authService.authenticate(token, AccountPrivilege.READ) {

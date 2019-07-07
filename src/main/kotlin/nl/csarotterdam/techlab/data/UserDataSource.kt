@@ -1,7 +1,7 @@
 package nl.csarotterdam.techlab.data
 
 import nl.csarotterdam.techlab.config.user
-import nl.csarotterdam.techlab.model.User
+import nl.csarotterdam.techlab.model.db.User
 import org.springframework.stereotype.Component
 import java.sql.ResultSet
 
