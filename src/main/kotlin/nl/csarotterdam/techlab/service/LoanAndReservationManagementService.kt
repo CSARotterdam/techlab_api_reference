@@ -8,7 +8,6 @@ import nl.csarotterdam.techlab.model.misc.BadRequestException
 import nl.csarotterdam.techlab.util.TimeUtils
 import nl.csarotterdam.techlab.util.toSQLInstant
 import org.springframework.stereotype.Component
-import java.sql.Date
 import java.time.Instant
 import java.util.*
 
@@ -70,10 +69,26 @@ class LoanAndReservationManagementService(
                 )
             }
 
-    private fun checkReturnDate(return_date: Date): ManagementItem? =
+    private fun checkReturnDate(return_date: Instant): ManagementItem? =
             if (TimeUtils.betweenNowInDays(return_date) >= 0) null else {
                 ManagementItem(
                         info = InfoLoanReturnDate(),
+                        inventory_id = null
+                )
+            }
+
+    private fun checkReservationFromDate(fromDate: Instant): ManagementItem? =
+            if (TimeUtils.betweenNowInDays(fromDate) >= 0) null else {
+                ManagementItem(
+                        info = InfoReservationFromDate(),
+                        inventory_id = null
+                )
+            }
+
+    private fun checkReservationToDate(fromDate: Instant, toDate: Instant): ManagementItem? =
+            if (TimeUtils.betweenInDays(fromDate, toDate) >= 0) null else {
+                ManagementItem(
+                        info = InfoReservationToDate(),
                         inventory_id = null
                 )
             }
@@ -99,8 +114,10 @@ class LoanAndReservationManagementService(
             }
 
     private fun checkInventoryAvailability(
+            fromDate: Instant,
             items: List<InventoryItemInput>,
-            inventoriesInfo: List<InventoryInfo>
+            inventoriesInfo: List<InventoryInfo>,
+            loans: List<LoanOutput>
     ): List<ManagementItem> = items
             .map { item ->
                 val inventoryId = item.inventory_id
@@ -109,6 +126,25 @@ class LoanAndReservationManagementService(
             }
             .filter { (item, inventoryInfo) ->
                 item.amount > inventoryInfo.stock_amount
+            }
+            .map { (item, inventoryInfo) ->
+                var stockAmount = inventoryInfo.stock_amount
+                var loanedAmount = inventoryInfo.loaned_amount
+
+                loans.forEach { loan ->
+                    val returnedBefore = TimeUtils.betweenInDays(loan.return_date.toSQLInstant(), fromDate) > 0
+                    if (returnedBefore) {
+                        stockAmount++
+                        loanedAmount--
+                    }
+                }
+
+                item to InventoryInfo(
+                        inventory_id = inventoryInfo.inventory_id,
+                        stock_amount = stockAmount,
+                        loaned_amount = loanedAmount,
+                        broken_amount = inventoryInfo.broken_amount
+                )
             }
             .map { (item, inventoryInfo) ->
                 ManagementItem(
@@ -122,7 +158,6 @@ class LoanAndReservationManagementService(
 
     private fun checkReservationCollisions(
             token: String,
-            items: List<InventoryItemInput>,
             inventoryIds: List<String>,
             inventoriesInfo: List<InventoryInfo>,
             fromDate: Instant,
@@ -170,54 +205,86 @@ class LoanAndReservationManagementService(
                 }
     }
 
+    private fun verifyLoanOrReservation(
+            token: String,
+            fromDate: Instant,
+            toDate: Instant,
+            items: List<InventoryItemInput>
+    ): List<ManagementItem> {
+        val loanTimeInDays = TimeUtils.betweenNowInDays(toDate).toInt()
+        val inventoryIds = items.map { it.inventory_id }
+        val inventories = inventoryIds.map { inventoryService.readInventoryById(it) }
+        val inventoriesInfo = inventoryIds.map { inventoryService.readInventoryInfoByInventoryId(token, it) }
+        val loans = loanService.readAllActiveLoans(token)
+
+        // check for amount of days for loaning
+        val loanTime = checkLoanTime(loanTimeInDays, items, inventories)
+
+        // check if items are available in stock of inventory
+        val inventoryAvailability = checkInventoryAvailability(
+                fromDate,
+                items,
+                inventoriesInfo,
+                loans
+        )
+
+        // check if reservations collide with this loan
+        val reservationCollisions = checkReservationCollisions(
+                token = token,
+                inventoryIds = inventoryIds,
+                inventoriesInfo = inventoriesInfo,
+                fromDate = fromDate,
+                toDate = toDate
+        )
+
+        return listOf(
+                loanTime,
+                inventoryAvailability,
+                reservationCollisions
+        ).flatten()
+    }
+
     fun verifyLoan(token: String, l: LoanCreateInput): List<ManagementItem> = authService.authenticate(token, AccountPrivilege.WRITE) {
         val loan = improveLoan(l)
 
         val currentDate = TimeUtils.currentDate()
-        val returnDate = l.return_date
+        val returnDate = l.return_date.toSQLInstant()
         val items = loan.items
 
         val daysCheck = checkReturnDate(returnDate)
         if (daysCheck != null) {
             listOf(daysCheck)
         } else {
-            val loanTimeInDays = TimeUtils.betweenNowInDays(returnDate).toInt()
-            val inventoryIds = items.map { it.inventory_id }
-            val inventories = inventoryIds.map { inventoryService.readInventoryById(it) }
-            val inventoriesInfo = inventoryIds.map { inventoryService.readInventoryInfoByInventoryId(token, it) }
-
-            // check for amount of days for loaning
-            val loanTime = checkLoanTime(loanTimeInDays, items, inventories)
-
-            // check if items are available in stock of inventory
-            val inventoryAvailability = checkInventoryAvailability(items, inventoriesInfo)
-
-            // check if reservations collide with this loan
-            val reservationCollisions = checkReservationCollisions(
+            verifyLoanOrReservation(
                     token = token,
-                    items = items,
-                    inventoryIds = inventoryIds,
-                    inventoriesInfo = inventoriesInfo,
                     fromDate = currentDate,
-                    toDate = returnDate.toSQLInstant()
+                    toDate = returnDate,
+                    items = items
             )
-
-            listOf(
-                    loanTime,
-                    inventoryAvailability,
-                    reservationCollisions
-            ).flatten()
         }
     }
 
     fun verifyReservation(token: String, r: ReservationInput): List<ManagementItem> = authService.authenticate(token, AccountPrivilege.WRITE) {
         val reservation = improveReservation(r)
 
-        // TODO: perform inventory checks
-        // TODO: perform inventory availability checks
-        // TODO: perform reservation collision checks
+        val fromDate = reservation.from_date.toSQLInstant()
+        val toDate = reservation.to_date.toSQLInstant()
+        val items = reservation.items
 
-        emptyList()
+        val fromCheck = checkReservationFromDate(fromDate)
+        val toCheck = checkReservationToDate(fromDate, toDate)
+        val fromToCheckList = listOfNotNull(fromCheck, toCheck)
+
+        if (fromToCheckList.isNotEmpty()) {
+            fromToCheckList
+        } else {
+            verifyLoanOrReservation(
+                    token = token,
+                    fromDate = fromDate,
+                    toDate = toDate,
+                    items = items
+            )
+        }
     }
 
     fun createLoan(token: String, l: LoanCreateInput): LoanOutput = authService.authenticate(token, AccountPrivilege.WRITE) {
