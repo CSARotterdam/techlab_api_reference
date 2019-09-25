@@ -41,6 +41,9 @@ class LoanAndReservationManagementService(
             deleted_on = null
     )
 
+    /**
+     * Improves the [LoanCreateInput] by grouping inventory items by their [InventoryItemInput.inventory_id]
+     */
     private fun improveLoan(l: LoanCreateInput) = l.run {
         LoanCreateInput(
                 account_id = account_id,
@@ -50,6 +53,9 @@ class LoanAndReservationManagementService(
         )
     }
 
+    /**
+     * Improves the [ReservationInput] by grouping inventory items by their [InventoryItemInput.inventory_id]
+     */
     private fun improveReservation(r: ReservationInput) = r.run {
         ReservationInput(
                 account_id = account_id,
@@ -60,6 +66,9 @@ class LoanAndReservationManagementService(
         )
     }
 
+    /**
+     * Correct inventory info by adding inventory items to stock if reservation ended
+     */
     private fun improveInventoryInfo(
             date: Instant,
             inventoryInfo: InventoryInfo,
@@ -84,6 +93,9 @@ class LoanAndReservationManagementService(
         )
     }
 
+    /**
+     * Groups the given inventory [items]
+     */
     private fun groupInventoryItems(items: List<InventoryItemInput>): List<InventoryItemInput> = items
             .groupBy { it.inventory_id }
             .map { (inventory_id, groupedItems) ->
@@ -94,6 +106,9 @@ class LoanAndReservationManagementService(
                 )
             }
 
+    /**
+     * Checks the [return_date] for at least being somewhere in the future
+     */
     private fun checkReturnDate(return_date: Instant): ManagementItem? =
             if (TimeUtils.betweenNowInDays(return_date) >= 0) null else {
                 ManagementItem(
@@ -118,17 +133,27 @@ class LoanAndReservationManagementService(
                 )
             }
 
+    /**
+     * Checks the loan time
+     *
+     * @param loanTimeInDays
+     * @param items of the loan or reservation
+     * @param inventories all inventory items that are requested for loan or reservation
+     */
     private fun checkLoanTime(
             loanTimeInDays: Int,
             items: List<InventoryItemInput>,
             inventories: List<InventoryOutput>
     ): List<ManagementItem> = items
             .map { item ->
+                // map the requested items to inventory representations
                 val inventory = requireNotNull(inventories.find { it.id == item.inventory_id })
                 inventory
             }
+            // which inventory items can't be loaned this long
             .filter { inventory -> loanTimeInDays > inventory.loan_time_in_days }
             .map { inventory ->
+                // create error
                 ManagementItem(
                         info = InfoInventoryLoanTime(
                                 given_loan_time = loanTimeInDays,
@@ -138,6 +163,9 @@ class LoanAndReservationManagementService(
                 )
             }
 
+    /**
+     * Returns the available time slots for the inventory to be loaned
+     */
     private fun getInventoryNotAvailableSlots(
             item: InventoryItemInput,
             inventoryInfo: InventoryInfo,
@@ -146,10 +174,14 @@ class LoanAndReservationManagementService(
             reservedItems: List<ReservationItemDatedOutput>,
             loans: List<LoanOutput>
     ): InventoryNotAvailable {
+        // setup
         val days = TimeUtils.getAllDaysInclusive(fromDate, toDate)
         val availableDays = days.toMutableList()
         val availableStock = mutableListOf<Int>()
+
+        // check for every day from fromDate to and including toDate
         for (day in days) {
+            // get all reserved items that are reserved on the current day
             val reservedItemsForDay = reservedItems
                     .filter {
                         val reservationFrom = it.from_date
@@ -161,12 +193,17 @@ class LoanAndReservationManagementService(
                         beforeEnd && afterStart
                     }
 
+            // get total reserved amount
             val reservedAmount = reservedItemsForDay.sumBy { it.amount }
 
+            // improve for returned reservations in the future
             val inventoryInfoAfterLoans = improveInventoryInfo(day, inventoryInfo, loans)
 
+            // get the indicative stock amount of the current day
             val stockAmountExcludingReserved = inventoryInfoAfterLoans.stock_amount - reservedAmount
             availableStock.add(stockAmountExcludingReserved)
+
+            // if amount is greater, inventory item can't be loaned on this day
             if (item.amount > stockAmountExcludingReserved) {
                 availableDays.remove(day)
             }
@@ -179,6 +216,7 @@ class LoanAndReservationManagementService(
                 val from = dates.first()
                 val to = dates.last()
 
+                // get the minimum stock amount for a given period
                 val stockAmount = requireNotNull(days.withIndex()
                         .filter { (_, day) -> day in availableDays }
                         .map { availableStock[it.index] }
@@ -192,6 +230,7 @@ class LoanAndReservationManagementService(
                 dates.clear()
             }
 
+            // group by date ranges
             val dates = mutableListOf<Date>()
             for (day in days) {
                 val date = Date(day.toEpochMilli())
@@ -213,6 +252,14 @@ class LoanAndReservationManagementService(
         )
     }
 
+    /**
+     * Checks if an inventory item is available
+     *
+     * @param fromDate
+     * @param toDate
+     * @param items given items
+     * @param inventoriesInfo inventory items info, indicating amount in stock, loaned and broken
+     */
     private fun checkInventoryAvailability(
             fromDate: Instant,
             toDate: Instant,
@@ -221,6 +268,7 @@ class LoanAndReservationManagementService(
             loans: List<LoanOutput>
     ): List<ManagementItem> = items
             .map { item ->
+                // map the requested item to it's inventory info
                 val inventoryId = item.inventory_id
                 val inventoryInfo = requireNotNull(inventoriesInfo.find { it.inventory_id == inventoryId })
                 item to inventoryInfo
@@ -235,6 +283,7 @@ class LoanAndReservationManagementService(
                         loans = loans
                 )
 
+                // return inventory availability
                 if (inventoryAvailability.available_slots.isNotEmpty() || !inventoryAvailability.is_available) {
                     ManagementItem(
                             info = InfoInventoryNotAvailable(
@@ -246,6 +295,9 @@ class LoanAndReservationManagementService(
                 } else null
             }
 
+    /**
+     * Checks for collisions between reservations
+     */
     private fun checkReservationCollisions(
             token: String,
             items: List<InventoryItemInput>,
@@ -271,6 +323,7 @@ class LoanAndReservationManagementService(
         // get all reservation items
         val reservationItems = reservations.map { reservation ->
             reservation.items
+                    // get only the items of a reservation applicable to the request
                     .filter { item -> item.inventory.id in inventoryIds }
                     .map { item ->
                         ReservationItemDatedOutput(
@@ -290,6 +343,7 @@ class LoanAndReservationManagementService(
                     val item = requireNotNull(items.find { it.inventory_id == inventoryId })
                     val inventoryInfo = requireNotNull(inventoriesInfo.find { it.inventory_id == inventoryId })
 
+                    // perform availability check
                     val inventoryAvailability = getInventoryNotAvailableSlots(
                             item = item,
                             inventoryInfo = inventoryInfo,
@@ -299,6 +353,7 @@ class LoanAndReservationManagementService(
                             loans = loans
                     )
 
+                    // return reservation inventory availability
                     if (inventoryAvailability.available_slots.isNotEmpty() || !inventoryAvailability.is_available) {
                         ManagementItem(
                                 info = InfoInventoryReserved(
@@ -311,6 +366,14 @@ class LoanAndReservationManagementService(
                 }
     }
 
+    /**
+     * Verifies a loan or reservation
+     *
+     * @param token of the user
+     * @param fromDate of the loan or reservation
+     * @param toDate / return date of the loan and reservation
+     * @param items in the loan or reservation
+     */
     private fun verifyLoanOrReservation(
             token: String,
             fromDate: Instant,
@@ -332,6 +395,9 @@ class LoanAndReservationManagementService(
             ))
         }
 
+        // now we know the list is not empty and all amounts are >= 1
+
+        // setup
         val loanTimeInDays = TimeUtils.betweenNowInDays(toDate).toInt()
         val inventoryIds = items.map { it.inventory_id }
         val inventories = inventoryIds.map { inventoryService.readInventoryById(it) }
@@ -361,6 +427,7 @@ class LoanAndReservationManagementService(
                 loans = loans
         )
 
+        // combine all checks/errors
         return listOf(
                 defaultChecks,
                 loanTime,
@@ -369,9 +436,16 @@ class LoanAndReservationManagementService(
         ).flatten()
     }
 
+    /**
+     * Verifies loan for a given [LoanCreateInput]
+     *
+     * @param token of the user
+     * @param l input to create a loan
+     */
     fun verifyLoan(token: String, l: LoanCreateInput): List<ManagementItem> = authService.authenticate(token, AccountPrivilege.WRITE) {
         val loan = improveLoan(l)
 
+        // setup dates and items
         val currentDate = TimeUtils.currentDate()
         val returnDate = l.return_date.toSQLInstant()
         val items = loan.items
@@ -389,13 +463,19 @@ class LoanAndReservationManagementService(
         }
     }
 
+    /**
+     * Verifies a given reservation
+     */
     fun verifyReservation(token: String, r: ReservationInput): List<ManagementItem> = authService.authenticate(token, AccountPrivilege.WRITE) {
+        // improve reservation by grouping inventory items
         val reservation = improveReservation(r)
 
+        // setup
         val fromDate = reservation.from_date.toSQLInstant()
         val toDate = reservation.to_date.toSQLInstant()
         val items = reservation.items
 
+        // perform checks
         val fromCheck = checkReservationFromDate(fromDate)
         val toCheck = checkReservationToDate(fromDate, toDate)
         val fromToCheckList = listOfNotNull(fromCheck, toCheck)
