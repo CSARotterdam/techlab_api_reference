@@ -191,8 +191,10 @@ class AuthService(
             }
         } catch (e: JwtException) {
             logger.info { "Error on parsing Jwt: $e" }
+            e.printStackTrace()
         } catch (e: IllegalArgumentException) {
             logger.info { "Error on parsing Jwt: $e" }
+            e.printStackTrace()
         }
         throw UnauthorizedException("not authorized")
     }

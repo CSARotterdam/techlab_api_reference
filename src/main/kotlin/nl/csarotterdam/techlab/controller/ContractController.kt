@@ -30,12 +30,6 @@ class ContractController(
             @PathVariable userId: String
     ) = contractService.readByUserId(token, userId)
 
-    @PostMapping("/create")
-    fun create(
-            @RequestHeader(AUTHORIZATION) token: String,
-            @RequestBody contract: ContractInput
-    ) = contractService.create(token, contract)
-
     @PatchMapping("/sign/account/{accountId}")
     fun signByAccount(
             @RequestHeader(AUTHORIZATION) token: String,

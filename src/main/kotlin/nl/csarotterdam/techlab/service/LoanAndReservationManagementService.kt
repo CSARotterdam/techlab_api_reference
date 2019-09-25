@@ -8,6 +8,7 @@ import nl.csarotterdam.techlab.model.misc.BadRequestException
 import nl.csarotterdam.techlab.util.TimeUtils
 import nl.csarotterdam.techlab.util.toSQLInstant
 import org.springframework.stereotype.Component
+import java.sql.Date
 import java.time.Instant
 import java.util.*
 
@@ -56,6 +57,30 @@ class LoanAndReservationManagementService(
                 items = groupInventoryItems(items),
                 from_date = from_date,
                 to_date = to_date
+        )
+    }
+
+    private fun improveInventoryInfo(
+            date: Instant,
+            inventoryInfo: InventoryInfo,
+            loans: List<LoanOutput>
+    ): InventoryInfo {
+        var stockAmount = inventoryInfo.stock_amount
+        var loanedAmount = inventoryInfo.loaned_amount
+
+        loans.forEach { loan ->
+            val returnedBefore = TimeUtils.betweenInDays(loan.return_date.toSQLInstant(), date) > 0
+            if (returnedBefore) {
+                stockAmount++
+                loanedAmount--
+            }
+        }
+
+        return InventoryInfo(
+                inventory_id = inventoryInfo.inventory_id,
+                stock_amount = stockAmount,
+                loaned_amount = loanedAmount,
+                broken_amount = inventoryInfo.broken_amount
         )
     }
 
@@ -113,8 +138,84 @@ class LoanAndReservationManagementService(
                 )
             }
 
+    private fun getInventoryNotAvailableSlots(
+            item: InventoryItemInput,
+            inventoryInfo: InventoryInfo,
+            fromDate: Instant,
+            toDate: Instant,
+            reservedItems: List<ReservationItemDatedOutput>,
+            loans: List<LoanOutput>
+    ): InventoryNotAvailable {
+        val days = TimeUtils.getAllDaysInclusive(fromDate, toDate)
+        val availableDays = days.toMutableList()
+        val availableStock = mutableListOf<Int>()
+        for (day in days) {
+            val reservedItemsForDay = reservedItems
+                    .filter {
+                        val reservationFrom = it.from_date
+                        val reservationTo = it.to_date
+
+                        val beforeEnd = TimeUtils.betweenInDays(day, reservationTo.toSQLInstant()) >= 0
+                        val afterStart = TimeUtils.betweenInDays(reservationFrom.toSQLInstant(), day) >= 0
+
+                        beforeEnd && afterStart
+                    }
+
+            val reservedAmount = reservedItemsForDay.sumBy { it.amount }
+
+            val inventoryInfoAfterLoans = improveInventoryInfo(day, inventoryInfo, loans)
+
+            val stockAmountExcludingReserved = inventoryInfoAfterLoans.stock_amount - reservedAmount
+            availableStock.add(stockAmountExcludingReserved)
+            if (item.amount > stockAmountExcludingReserved) {
+                availableDays.remove(day)
+            }
+        }
+
+        val slots = mutableListOf<InventoryNotAvailableSlot>()
+
+        if (days != availableDays) {
+            fun add(dates: MutableList<Date>) {
+                val from = dates.first()
+                val to = dates.last()
+
+                val stockAmount = requireNotNull(days.withIndex()
+                        .filter { (_, day) -> day in availableDays }
+                        .map { availableStock[it.index] }
+                        .min())
+                slots.add(InventoryNotAvailableSlot(
+                        stock_amount = stockAmount,
+                        from_date = from,
+                        to_date = to
+                ))
+
+                dates.clear()
+            }
+
+            val dates = mutableListOf<Date>()
+            for (day in days) {
+                val date = Date(day.toEpochMilli())
+                if (day in availableDays) {
+                    dates.add(date)
+                } else if (dates.isNotEmpty()) {
+                    add(dates)
+                }
+            }
+
+            if (dates.isNotEmpty()) {
+                add(dates)
+            }
+        }
+
+        return InventoryNotAvailable(
+                is_available = availableDays.isNotEmpty(),
+                available_slots = slots.toList()
+        )
+    }
+
     private fun checkInventoryAvailability(
             fromDate: Instant,
+            toDate: Instant,
             items: List<InventoryItemInput>,
             inventoriesInfo: List<InventoryInfo>,
             loans: List<LoanOutput>
@@ -124,44 +225,35 @@ class LoanAndReservationManagementService(
                 val inventoryInfo = requireNotNull(inventoriesInfo.find { it.inventory_id == inventoryId })
                 item to inventoryInfo
             }
-            .filter { (item, inventoryInfo) ->
-                item.amount > inventoryInfo.stock_amount
-            }
-            .map { (item, inventoryInfo) ->
-                var stockAmount = inventoryInfo.stock_amount
-                var loanedAmount = inventoryInfo.loaned_amount
-
-                loans.forEach { loan ->
-                    val returnedBefore = TimeUtils.betweenInDays(loan.return_date.toSQLInstant(), fromDate) > 0
-                    if (returnedBefore) {
-                        stockAmount++
-                        loanedAmount--
-                    }
-                }
-
-                item to InventoryInfo(
-                        inventory_id = inventoryInfo.inventory_id,
-                        stock_amount = stockAmount,
-                        loaned_amount = loanedAmount,
-                        broken_amount = inventoryInfo.broken_amount
+            .mapNotNull { (item, inventoryInfo) ->
+                val inventoryAvailability = getInventoryNotAvailableSlots(
+                        item = item,
+                        inventoryInfo = inventoryInfo,
+                        fromDate = fromDate,
+                        toDate = toDate,
+                        reservedItems = emptyList(),
+                        loans = loans
                 )
-            }
-            .map { (item, inventoryInfo) ->
-                ManagementItem(
-                        info = InfoInventoryNotAvailable(
-                                given_amount = item.amount,
-                                inventory_info = inventoryInfo
-                        ),
-                        inventory_id = item.inventory_id
-                )
+
+                if (inventoryAvailability.available_slots.isNotEmpty() || !inventoryAvailability.is_available) {
+                    ManagementItem(
+                            info = InfoInventoryNotAvailable(
+                                    given_amount = item.amount,
+                                    available_slots = inventoryAvailability.available_slots
+                            ),
+                            inventory_id = item.inventory_id
+                    )
+                } else null
             }
 
     private fun checkReservationCollisions(
             token: String,
+            items: List<InventoryItemInput>,
             inventoryIds: List<String>,
             inventoriesInfo: List<InventoryInfo>,
             fromDate: Instant,
-            toDate: Instant
+            toDate: Instant,
+            loans: List<LoanOutput>
     ): List<ManagementItem> {
         // get applicable reservations
         val reservations = reservationService.listCurrent(token)
@@ -169,35 +261,49 @@ class LoanAndReservationManagementService(
                     val reservationFrom = it.from_date
                     val reservationTo = it.to_date
 
-                    val before = TimeUtils.betweenInDays(toDate, reservationFrom.toInstant()) > 0
-                    val after = TimeUtils.betweenInDays(reservationTo.toInstant(), fromDate) > 0
+                    val before = TimeUtils.betweenInDays(reservationTo.toSQLInstant(), fromDate) > 0
+                    val after = TimeUtils.betweenInDays(toDate, reservationFrom.toSQLInstant()) > 0
 
+                    // if not before and not after, it collides with the loan, so it's applicable
                     !before && !after
                 }
 
         // get all reservation items
         val reservationItems = reservations.map { reservation ->
-            reservation.items.filter { item -> item.inventory.id in inventoryIds }
+            reservation.items
+                    .filter { item -> item.inventory.id in inventoryIds }
+                    .map { item ->
+                        ReservationItemDatedOutput(
+                                item_id = item.item_id,
+                                inventory = item.inventory,
+                                amount = item.amount,
+                                from_date = reservation.from_date,
+                                to_date = reservation.to_date
+                        )
+                    }
         }.flatten()
 
         // group all reservations
         return reservationItems
                 .groupBy { it.inventory.id }
-                .mapNotNull { (inventoryId, items) ->
-                    val reservedAmount = items.sumBy { item -> item.amount }
-
-                    val item = requireNotNull(items.find { it.inventory.id == inventoryId })
+                .mapNotNull { (inventoryId, reservedItems) ->
+                    val item = requireNotNull(items.find { it.inventory_id == inventoryId })
                     val inventoryInfo = requireNotNull(inventoriesInfo.find { it.inventory_id == inventoryId })
 
-                    val stockAmountExcludingReserved = inventoryInfo.stock_amount - reservedAmount
+                    val inventoryAvailability = getInventoryNotAvailableSlots(
+                            item = item,
+                            inventoryInfo = inventoryInfo,
+                            fromDate = fromDate,
+                            toDate = toDate,
+                            reservedItems = reservedItems,
+                            loans = loans
+                    )
 
-                    if (item.amount > stockAmountExcludingReserved) {
+                    if (inventoryAvailability.available_slots.isNotEmpty() || !inventoryAvailability.is_available) {
                         ManagementItem(
                                 info = InfoInventoryReserved(
                                         given_amount = item.amount,
-                                        stock_amount = inventoryInfo.stock_amount,
-                                        reserved_amount = reservedAmount,
-                                        stock_amount_excluding_reserved = stockAmountExcludingReserved
+                                        available_slots = inventoryAvailability.available_slots
                                 ),
                                 inventory_id = inventoryId
                         )
@@ -237,19 +343,22 @@ class LoanAndReservationManagementService(
 
         // check if items are available in stock of inventory
         val inventoryAvailability = checkInventoryAvailability(
-                fromDate,
-                items,
-                inventoriesInfo,
-                loans
+                fromDate = fromDate,
+                toDate = toDate,
+                items = items,
+                inventoriesInfo = inventoriesInfo,
+                loans = loans
         )
 
         // check if reservations collide with this loan
         val reservationCollisions = checkReservationCollisions(
                 token = token,
+                items = items,
                 inventoryIds = inventoryIds,
                 inventoriesInfo = inventoriesInfo,
                 fromDate = fromDate,
-                toDate = toDate
+                toDate = toDate,
+                loans = loans
         )
 
         return listOf(

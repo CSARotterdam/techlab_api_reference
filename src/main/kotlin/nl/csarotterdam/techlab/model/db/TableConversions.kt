@@ -140,3 +140,11 @@ data class ReservationItemOutput(
         val inventory: InventoryOutput,
         val amount: Int
 )
+
+data class ReservationItemDatedOutput(
+        val item_id: String,
+        val inventory: InventoryOutput,
+        val amount: Int,
+        val from_date: Date,
+        val to_date: Date
+)

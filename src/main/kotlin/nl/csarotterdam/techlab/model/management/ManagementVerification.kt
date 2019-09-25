@@ -1,9 +1,9 @@
 package nl.csarotterdam.techlab.model.management
 
-import nl.csarotterdam.techlab.model.inventory.InventoryInfo
 import nl.csarotterdam.techlab.model.management.ManagementSubtype.*
 import nl.csarotterdam.techlab.model.management.ManagementType.ERROR
 import nl.csarotterdam.techlab.model.management.ManagementType.WARNING
+import java.sql.Date
 
 data class ManagementItem(
         val info: ManagementInfo,
@@ -30,31 +30,63 @@ enum class ManagementSubtype {
 }
 
 abstract class ManagementInfo(
-        val type: ManagementType,
-        val subtype: ManagementSubtype
+        open val type: ManagementType,
+        open val subtype: ManagementSubtype
 )
 
-class InfoDefaultItemsEmpty : ManagementInfo(ERROR, DEFAULT_ITEMS_EMPTY)
-class InfoDefaultItemNoAmount : ManagementInfo(ERROR, DEFAULT_ITEM_NO_AMOUNT)
+data class InfoDefaultItemsEmpty(
+        override val type: ManagementType = ERROR,
+        override val subtype: ManagementSubtype = DEFAULT_ITEMS_EMPTY
+) : ManagementInfo(type, subtype)
 
-class InfoLoanReturnDate : ManagementInfo(ERROR, LOAN_RETURN_DATE)
+data class InfoDefaultItemNoAmount(
+        override val type: ManagementType = ERROR,
+        override val subtype: ManagementSubtype = DEFAULT_ITEM_NO_AMOUNT
+) : ManagementInfo(type, subtype)
 
-class InfoReservationFromDate : ManagementInfo(ERROR, RESERVATION_FROM_DATE)
-class InfoReservationToDate : ManagementInfo(ERROR, RESERVATION_TO_DATE)
+data class InfoLoanReturnDate(
+        override val type: ManagementType = ERROR,
+        override val subtype: ManagementSubtype = LOAN_RETURN_DATE
+) : ManagementInfo(type, subtype)
 
-class InfoInventoryLoanTime(
+data class InfoReservationFromDate(
+        override val type: ManagementType = ERROR,
+        override val subtype: ManagementSubtype = RESERVATION_FROM_DATE
+) : ManagementInfo(type, subtype)
+
+data class InfoReservationToDate(
+        override val type: ManagementType = ERROR,
+        override val subtype: ManagementSubtype = RESERVATION_TO_DATE
+) : ManagementInfo(type, subtype)
+
+data class InfoInventoryLoanTime(
+        override val type: ManagementType = WARNING,
+        override val subtype: ManagementSubtype = INVENTORY_LOAN_TIME,
         val given_loan_time: Int,
         val expected_loan_time: Int
-) : ManagementInfo(WARNING, INVENTORY_LOAN_TIME)
+) : ManagementInfo(type, subtype)
 
-class InfoInventoryNotAvailable(
+data class InfoInventoryNotAvailable(
+        override val type: ManagementType = ERROR,
+        override val subtype: ManagementSubtype = INVENTORY_NOT_AVAILABLE,
         val given_amount: Int,
-        val inventory_info: InventoryInfo
-) : ManagementInfo(ERROR, INVENTORY_NOT_AVAILABLE)
+        val available_slots: List<InventoryNotAvailableSlot>
+) : ManagementInfo(type, subtype)
 
-class InfoInventoryReserved(
+data class InfoInventoryReserved(
+        override val type: ManagementType = ERROR,
+        override val subtype: ManagementSubtype = INVENTORY_RESERVED,
         val given_amount: Int,
+        val available_slots: List<InventoryNotAvailableSlot>
+) : ManagementInfo(type, subtype)
+
+data class InventoryNotAvailableSlot(
         val stock_amount: Int,
-        val reserved_amount: Int,
-        val stock_amount_excluding_reserved: Int
-) : ManagementInfo(ERROR, INVENTORY_RESERVED)
+        val from_date: Date,
+        val to_date: Date
+)
+
+data class InventoryNotAvailable(
+        val is_available: Boolean,
+        val available_slots: List<InventoryNotAvailableSlot>
+)
